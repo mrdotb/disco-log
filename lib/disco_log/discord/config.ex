@@ -1,0 +1,44 @@
+defmodule DiscoLog.Discord.Config do
+  @moduledoc """
+  Discord configuration module.
+  """
+
+  @category %{
+    name: "disco-log",
+    type: 4
+  }
+
+  @occurrences_channel %{
+    name: "occurrences",
+    type: 15,
+    available_tags: Enum.map(~w(plug phoenix liveview oban)s, &%{name: &1})
+  }
+
+  @info_channel %{
+    name: "info",
+    type: 0
+  }
+
+  @error_channel %{
+    name: "error",
+    type: 0
+  }
+
+  def category, do: @category
+  def occurrences_channel, do: @occurrences_channel
+  def info_channel, do: @info_channel
+  def error_channel, do: @error_channel
+
+  def token, do: Application.fetch_env!(:disco_log, :token)
+  def guild_id, do: Application.fetch_env!(:disco_log, :guild_id)
+  def category_id, do: Application.fetch_env!(:disco_log, :category_id)
+  def occurrences_channel_id, do: Application.fetch_env!(:disco_log, :occurrences_channel_id)
+  def info_channel_id, do: Application.fetch_env!(:disco_log, :info_channel_id)
+  def error_channel_id, do: Application.fetch_env!(:disco_log, :error_channel_id)
+
+  def occurrences_channel_tag_id(tag) do
+    :disco_log
+    |> Application.fetch_env!(:occurrences_channel_tags)
+    |> Map.fetch!(tag)
+  end
+end
