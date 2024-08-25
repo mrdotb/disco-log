@@ -12,9 +12,7 @@ defmodule DiscoLog.LoggerHandler do
   alias DiscoLog.Error
 
   defstruct excluded_domains: [:cowboy, :bandit],
-            metadata: [],
-            info_channel_id: nil,
-            error_channel_id: nil
+            metadata: []
 
   ## Logger handler callbacks
 
@@ -32,15 +30,11 @@ defmodule DiscoLog.LoggerHandler do
   end
 
   defp configure(%LoggerHandler{} = existing_config, config) do
-    info_channel_id = Keyword.get(config, :info_channel_id)
-    error_channel_id = Keyword.get(config, :error_channel_id)
     metadata = Keyword.get(config, :metadata, [])
 
     %{
       existing_config
-      | info_channel_id: info_channel_id,
-        error_channel_id: error_channel_id,
-        metadata: metadata
+      | metadata: metadata
     }
   end
 
@@ -118,7 +112,7 @@ defmodule DiscoLog.LoggerHandler do
          %LoggerHandler{} = config
        ) do
     metadata = take_metadata(log_event.meta, config.metadata)
-    log_from_crash_reason(meta[:crash_reason], unicode_chardata, metadata, config)
+    log_from_crash_reason(meta[:crash_reason], unicode_chardata, metadata)
   end
 
   # "report" here is of type logger:report/0, which is a map or keyword list.
@@ -143,7 +137,7 @@ defmodule DiscoLog.LoggerHandler do
         Client.log_error(reason, metadata)
 
       _ ->
-        Client.log_error(inspect(report), metadata)
+        Client.log_error(report, metadata)
     end
   end
 
@@ -159,11 +153,14 @@ defmodule DiscoLog.LoggerHandler do
     :ok
   end
 
+  defp log_error(_log_event, %LoggerHandler{} = _config) do
+    :ok
+  end
+
   defp log_from_crash_reason(
          {exception, stacktrace},
          _chardata_message,
-         metadata,
-         _config
+         metadata
        )
        when is_exception(exception) and is_list(stacktrace) do
     context = Map.put(Context.get(), :metadata, metadata)
@@ -175,8 +172,7 @@ defmodule DiscoLog.LoggerHandler do
   defp log_from_crash_reason(
          {reason, stacktrace},
          chardata_message,
-         metadata,
-         _config
+         metadata
        )
        when is_list(stacktrace) do
     context =
@@ -185,19 +181,33 @@ defmodule DiscoLog.LoggerHandler do
         metadata: metadata
       })
 
-    error = Error.new(reason, stacktrace, context)
-    Client.send_error(error)
+    case reason do
+      {type, {GenServer, :call, [_pid, _call, _timeout]}} = reason
+      when type in [:noproc, :timeout] ->
+        reason = Exception.format_exit(reason)
+        context = Map.put(context, :extra_reason, reason)
+        error = Error.new({"genserver_call", type}, stacktrace, context)
+        Client.send_error(error)
+
+      _other ->
+        context =
+          Map.put(context, :extra_info_from_genserver, try_to_parse_message(chardata_message))
+
+        error = Error.new(reason, stacktrace, context)
+        Client.send_error(error)
+    end
+
     :ok
   end
 
-  # defp log_from_crash_reason(
-  #        _other_reason,
-  #        chardata_message,
-  #        metadata,
-  #        config
-  #      ) do
-  #   Discord.create_message(config.error_channel_id, chardata_message, metadata)
-  # end
+  defp log_from_crash_reason(
+         _other_reason,
+         chardata_message,
+         metadata
+       ) do
+    Client.log_error(chardata_message, metadata)
+    :ok
+  end
 
   defp extra_info_from_message([
          [
@@ -236,6 +246,82 @@ defmodule DiscoLog.LoggerHandler do
   end
 
   defp extra_info_from_message(_message) do
+    %{}
+  end
+
+  # We do this because messages from Erlang's gen_* behaviours are often full of interesting
+  # and useful data. For example, GenServer messages contain the PID, the reason, the last
+  # message, and a treasure trove of stuff. If we cannot parse the message, such is life
+  # and we just report it as is.
+  defp try_to_parse_message([
+         [
+           "GenServer ",
+           _inspected_pid,
+           " terminating",
+           chardata_reason,
+           _whatever_this_is = [],
+           "\nLast message",
+           [" (from ", _inspected_sender_pid, ")"],
+           ": ",
+           inspected_last_message
+         ],
+         "\nState: ",
+         inspected_state | _
+       ]) do
+    string_reason = chardata_reason |> :unicode.characters_to_binary() |> String.trim()
+
+    %{
+      last_message: inspected_last_message,
+      message: "GenServer %{} terminating: #{string_reason}",
+      state: inspected_state
+    }
+  end
+
+  defp try_to_parse_message([
+         [
+           "GenServer ",
+           _inspected_pid,
+           " terminating",
+           chardata_reason,
+           "\nLast message",
+           [" (from ", _inspected_sender_pid, ")"],
+           ": ",
+           inspected_last_message
+         ],
+         "\nState: ",
+         inspected_state | _
+       ]) do
+    string_reason = chardata_reason |> :unicode.characters_to_binary() |> String.trim()
+
+    %{
+      last_message: inspected_last_message,
+      message: "GenServer %{} terminating: #{string_reason}",
+      state: inspected_state
+    }
+  end
+
+  defp try_to_parse_message([
+         [
+           "GenServer ",
+           _inspected_pid,
+           " terminating",
+           chardata_reason,
+           "\nLast message: ",
+           inspected_last_message
+         ],
+         "\nState: ",
+         inspected_state | _
+       ]) do
+    string_reason = chardata_reason |> :unicode.characters_to_binary() |> String.trim()
+
+    %{
+      last_message: inspected_last_message,
+      message: "GenServer %{} terminating: #{string_reason}",
+      state: inspected_state
+    }
+  end
+
+  defp try_to_parse_message(_chardata_message) do
     %{}
   end
 

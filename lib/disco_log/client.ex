@@ -2,7 +2,6 @@ defmodule DiscoLog.Client do
   @moduledoc """
   Client for DiscoLog.
   """
-
   alias DiscoLog.Config
   alias DiscoLog.Dedupe
   alias DiscoLog.Discord
@@ -13,6 +12,20 @@ defmodule DiscoLog.Client do
     with {:ok, %Error{} = error} <- maybe_call_before_send(error, Config.before_send()),
          :ok <- maybe_dedupe(error) do
       send(error)
+    end
+  end
+
+  def log_info(message, metadata) do
+    with {:ok, {message, metadata}} <-
+           maybe_call_before_send({message, metadata}, Config.before_send()) do
+      Discord.create_message(Discord.Config.info_channel_id(), message, metadata)
+    end
+  end
+
+  def log_error(message, metadata) do
+    with {:ok, {message, metadata}} <-
+           maybe_call_before_send({message, metadata}, Config.before_send()) do
+      Discord.create_message(Discord.Config.error_channel_id(), message, metadata)
     end
   end
 
@@ -40,14 +53,6 @@ defmodule DiscoLog.Client do
 
   defp create_thread_or_add_message(thread_id, error) do
     Discord.create_occurrence_message(thread_id, error)
-  end
-
-  def log_info(message, metadata) do
-    Discord.create_message(Discord.Config.info_channel_id(), message, metadata)
-  end
-
-  def log_error(message, metadata) do
-    Discord.create_message(Discord.Config.error_channel_id(), message, metadata)
   end
 
   defp maybe_call_before_send(%Error{} = error, nil) do

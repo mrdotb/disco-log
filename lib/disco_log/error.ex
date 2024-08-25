@@ -14,11 +14,14 @@ defmodule DiscoLog.Error do
     source = Stacktrace.source(stacktrace)
 
     source_line =
-      if not is_nil(source.file) and source.file != "",
+      if is_map(source) and not is_nil(source.file) and source.file != "",
         do: "#{source.file}:#{source.line}",
         else: "nofile"
 
-    source_function = "#{source.module}.#{source.function}/#{source.arity}"
+    source_function =
+      if is_map(source),
+        do: "#{source.module}.#{source.function}/#{source.arity}",
+        else: "nofunction"
 
     %Error{
       kind: kind,
@@ -40,10 +43,26 @@ defmodule DiscoLog.Error do
       %struct{} = ex ->
         {to_string(struct), Exception.message(ex)}
 
+      {mod, fun, args} ->
+        {to_string(kind),
+         to_string(mod) <> "." <> to_string(fun) <> "/" <> to_string(Enum.count(args))}
+
       other ->
         {to_string(kind), to_string(other)}
     end
   end
+
+  defp normalize_exception(:bad_exit, []) do
+    {"exit", "bad_exit"}
+  end
+
+  defp normalize_exception(reason, _other) when is_atom(reason) do
+    {reason, "unknow"}
+  end
+
+  # defp normalize_exception(_reason, _) do
+  #   {"unknow", "unknow"}
+  # end
 
   # Fingerprint is used to group the similar errors together
   # Original implementation from https://github.com/elixir-error-tracker/error-tracker/blob/main/lib/error_tracker/schemas/error.ex#L40

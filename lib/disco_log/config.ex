@@ -3,7 +3,7 @@ defmodule DiscoLog.Config do
   Configuration related module for DiscoLog.
   """
 
-  @logger_config_keys ~w(info_channel_id error_channel_id metadata)a
+  @logger_config_keys ~w(metadata)a
 
   def logger_enabled? do
     case Application.fetch_env(:disco_log, :enable_logger) do
