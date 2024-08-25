@@ -9,13 +9,9 @@ defmodule DiscoLog.Application do
   alias DiscoLog.Storage
 
   def start(_type, _args) do
-    # if Config.logger_enabled?() do
-    #   DiscoLog.Logger.attach()
-    # end
-
-    # if Config.error_backend_enabled?() do
-    #   Integrations.ErrorBackend.attach()
-    # end
+    if Config.logger_enabled?() do
+      :logger.add_handler(:disco_log_handler, DiscoLog.LoggerHandler, %{})
+    end
 
     if Config.instrument_phoenix?() do
       Integrations.Phoenix.attach()

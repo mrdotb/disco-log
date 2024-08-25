@@ -3,7 +3,7 @@ defmodule DiscoLog.Config do
   Configuration related module for DiscoLog.
   """
 
-  @logger_config_keys ~w(info_channel_id info_format error_channel_id error_format)a
+  @logger_config_keys ~w(info_channel_id error_channel_id metadata)a
 
   def logger_enabled? do
     case Application.fetch_env(:disco_log, :enable_logger) do
@@ -36,5 +36,12 @@ defmodule DiscoLog.Config do
   def logger_config do
     config = Application.get_all_env(:disco_log)
     Keyword.take(config, @logger_config_keys)
+  end
+
+  def before_send do
+    case Application.fetch_env(:disco_log, :before_send) do
+      {:ok, value} -> value
+      :error -> nil
+    end
   end
 end

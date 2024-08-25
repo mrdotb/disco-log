@@ -47,6 +47,7 @@ defmodule DiscoLog.Integrations.Phoenix do
   (available when the `handle_event` function is invoked).
   """
 
+  alias DiscoLog.Context
   alias DiscoLog.Integrations.Plug, as: PlugIntegration
 
   @events [
@@ -89,20 +90,20 @@ defmodule DiscoLog.Integrations.Phoenix do
   end
 
   def handle_event([:phoenix, :live_view, :mount, :start], _, metadata, :no_config) do
-    DiscoLog.set_context(%{
+    Context.set(:live_view, %{
       "live_view.view" => metadata.socket.view
     })
   end
 
   def handle_event([:phoenix, :live_view, :handle_params, :start], _, metadata, :no_config) do
-    DiscoLog.set_context(%{
+    Context.set(:live_view, %{
       "live_view.uri" => metadata.uri,
       "live_view.params" => metadata.params
     })
   end
 
   def handle_event([:phoenix, :live_view, :handle_event, :start], _, metadata, :no_config) do
-    DiscoLog.set_context(%{
+    Context.set(:live_view, %{
       "live_view.event" => metadata.event,
       "live_view.event_params" => metadata.params
     })

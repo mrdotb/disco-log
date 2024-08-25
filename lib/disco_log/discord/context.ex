@@ -39,13 +39,13 @@ defmodule DiscoLog.Discord.Context do
 
   def create_occurrence_thread(error) do
     error
-    |> prepare_thread_fields()
+    |> prepare_occurrence_thread_fields()
     |> Discord.Client.create_form_forum_thread()
   end
 
   def create_occurrence_message(thread_id, error) do
     error
-    |> prepare_message_fields()
+    |> prepare_occurrence_message_fields()
     |> Discord.Client.create_form_message(channel_id: thread_id)
   end
 
@@ -57,7 +57,7 @@ defmodule DiscoLog.Discord.Context do
     |> Enum.map(&{extract_fingerprint(&1["name"]), &1["id"]})
   end
 
-  defp prepare_thread_fields(error) do
+  defp prepare_occurrence_thread_fields(error) do
     [
       payload_json:
         Jason.encode!(
@@ -72,7 +72,7 @@ defmodule DiscoLog.Discord.Context do
     |> maybe_put_context(error.context)
   end
 
-  defp prepare_message_fields(error) do
+  defp prepare_occurrence_message_fields(error) do
     [
       payload_json: Jason.encode!(prepare_error_message(error))
     ]
@@ -132,9 +132,33 @@ defmodule DiscoLog.Discord.Context do
     )
   end
 
-  def create_message(thread_id, message) do
-    %{content: message}
-    |> Discord.Client.create_json_message(channel_id: thread_id)
+  def create_message(channel_id, message, metadata) when is_binary(message) do
+    [
+      payload_json:
+        Jason.encode!(%{
+          content: message
+        })
+    ]
+    |> maybe_put_metadata(metadata)
+    |> Discord.Client.create_form_message(channel_id: channel_id)
+  end
+
+  def create_message(channel_id, message, metadata) when is_map(message) do
+    [
+      message: {Jason.encode!(message, pretty: true), filename: "message.json"}
+    ]
+    |> maybe_put_metadata(metadata)
+    |> Discord.Client.create_form_message(channel_id: channel_id)
+  end
+
+  defp maybe_put_metadata(fields, metadata) when map_size(metadata) == 0, do: fields
+
+  defp maybe_put_metadata(fields, metadata) do
+    Keyword.put(
+      fields,
+      :metadata,
+      {Jason.encode!(metadata, pretty: true), filename: "metadata.json"}
+    )
   end
 
   def delete_threads(channel_id) do

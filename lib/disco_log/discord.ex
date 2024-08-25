@@ -20,7 +20,7 @@ defmodule DiscoLog.Discord do
 
   defdelegate delete_channel_messages(channel_id), to: Discord.Context
 
-  defdelegate create_message(channel_id, message), to: Discord.Context
+  defdelegate create_message(channel_id, message, metadata), to: Discord.Context
 
   defdelegate delete_threads(channel_id), to: Discord.Context
 end

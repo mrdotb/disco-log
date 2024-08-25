@@ -45,8 +45,6 @@ defmodule DiscoLog.Integrations.Oban do
   def handle_event([:oban, :job, :exception], _measurements, metadata, :no_config) do
     %{reason: exception, stacktrace: stacktrace, job: job} = metadata
 
-    DiscoLog.set_namespace("oban")
-
     context = %{
       "job.args" => job.args,
       "job.attempt" => job.attempt,

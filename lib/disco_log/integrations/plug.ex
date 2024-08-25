@@ -61,6 +61,9 @@ defmodule DiscoLog.Integrations.Plug do
 
   """
 
+  alias DiscoLog.Context
+  alias Plug.Conn
+
   defmacro __using__(_opts) do
     quote do
       @before_compile unquote(__MODULE__)
@@ -78,7 +81,7 @@ defmodule DiscoLog.Integrations.Plug do
         e in Plug.Conn.WrapperError ->
           unquote(__MODULE__).report_error(e.conn, e.reason, e.stack)
 
-          Plug.Conn.WrapperError.reraise(e)
+          Conn.WrapperError.reraise(e)
 
         e ->
           stack = __STACKTRACE__
@@ -99,7 +102,7 @@ defmodule DiscoLog.Integrations.Plug do
   def report_error(conn, reason, stack) do
     unless Process.get(:error_tracker_router_exception_reported) do
       try do
-        DiscoLog.report(reason, stack, build_context(conn))
+        DiscoLog.report(reason, stack, %{plug: build_context(conn)})
       after
         Process.put(:error_tracker_router_exception_reported, true)
       end
@@ -108,7 +111,8 @@ defmodule DiscoLog.Integrations.Plug do
 
   @doc false
   def set_context(%Plug.Conn{} = conn) do
-    conn |> build_context() |> DiscoLog.set_context()
+    context = build_context(conn)
+    Context.set(:plug, context)
   end
 
   defp build_context(%Plug.Conn{} = conn) do
