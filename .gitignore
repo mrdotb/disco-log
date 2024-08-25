@@ -31,4 +31,3 @@ disco_log-*.tar
 
 # Config
 /config/dev.exs
-/config/test.exs

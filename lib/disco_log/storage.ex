@@ -30,7 +30,7 @@ defmodule DiscoLog.Storage do
 
   @impl GenServer
   def handle_continue(:restore, state) do
-    Discord.list_occurence_threads()
+    Discord.list_occurrence_threads()
     |> Enum.each(fn {fingerprint, thread_id} ->
       :ets.insert(@ets, {fingerprint, thread_id})
     end)

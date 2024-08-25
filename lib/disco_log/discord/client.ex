@@ -114,7 +114,10 @@ defmodule DiscoLog.Discord.Client do
   end
 
   def delete_message(channel_id, message_id) do
-    case Req.delete!(client(), url: "/channels/#{channel_id}/messages/#{message_id}") do
+    case Req.delete!(client(),
+           url: "/channels/#{channel_id}/messages/#{message_id}",
+           max_retries: 10
+         ) do
       %Req.Response{status: 204} ->
         :ok
 

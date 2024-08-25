@@ -49,7 +49,7 @@ defmodule DiscoLog.Discord.Context do
     |> Discord.Client.create_form_message(channel_id: thread_id)
   end
 
-  def list_occurence_threads do
+  def list_occurrence_threads do
     {:ok, response} = Discord.Client.list_active_threads()
 
     response["threads"]

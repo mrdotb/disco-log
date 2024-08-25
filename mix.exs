@@ -27,13 +27,10 @@ defmodule DiscoLog.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      # {:ecto, "~> 3.11"},
       {:jason, "~> 1.1"},
       {:plug, "~> 1.10"},
       {:req, "~> 0.5.0"},
-      {:logger_backends, "~> 1.0.0"},
       # Dev dependencies
-      {:mox, "~> 1.2", only: [:test]},
       {:credo, "~> 1.7", only: [:dev, :test]},
       {:ex_doc, "~> 0.33", only: :dev},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
