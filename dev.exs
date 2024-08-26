@@ -39,11 +39,21 @@ defmodule DemoWeb.PageController do
   def call(conn, :index) do
     content(conn, """
     <h2>DiscoLog Dev Server</h2>
+
+    <h3>Phoenix</h3>
     <div><a href="/plug-exception">Generate Plug exception</a></div>
-    <div><a href="/404">Generate Router 404</a></div>
     <div><a href="/noroute">Raise NoRouteError from a controller</a></div>
     <div><a href="/exception">Generate Exception</a></div>
     <div><a href="/exit">Generate Exit</a></div>
+
+
+    <h3>Liveview</h3>
+    <div><a href="/liveview/mount_error">Generate LiveView mount error</a></div>
+    <div><a href="/liveview/multi_error/raise">Generate LiveView raise error</a></div>
+    <div><a href="/liveview/multi_error/throw">Generate LiveView throw error</a></div>
+
+    <h3>Should not generate errors</h3>
+    <div><a href="/404">404 Not found</a></div>
     """)
   end
 
@@ -66,6 +76,46 @@ defmodule DemoWeb.PageController do
   end
 end
 
+defmodule DemoWeb.MountErrorLive do
+  use Phoenix.LiveView
+
+  def mount(_params, _session, socket) do
+    :not_ok
+  end
+
+  def render(assigns) do
+    ~H"""
+    <h2>DiscoLog Dev Server</h2>
+    """
+  end
+end
+
+defmodule DemoWeb.MultiErrorLive do
+  use Phoenix.LiveView
+
+  def mount(_params, _session, socket) do
+    {:ok, socket}
+  end
+
+  def handle_params(params, _url, socket) do
+    {:noreply, apply_action(socket, socket.assigns.live_action, params)}
+  end
+
+  defp apply_action(socket, :raise, _params) do
+    raise "Error raised in a live view"
+  end
+
+  defp apply_action(socket, :throw, _params) do
+    throw "Error throwed in a live view"
+  end
+
+  def render(assigns) do
+    ~H"""
+    <h2>DiscoLog Dev Server</h2>
+    """
+  end
+end
+
 defmodule DiscoLogDevWeb.ErrorView do
   def render("404.html", _assigns) do
     "This is a 404"
@@ -78,6 +128,7 @@ end
 
 defmodule DemoWeb.Router do
   use Phoenix.Router
+  import Phoenix.LiveView.Router
 
   pipeline :browser do
     plug :fetch_session
@@ -90,6 +141,10 @@ defmodule DemoWeb.Router do
     get "/noroute", DemoWeb.PageController, :noroute
     get "/exception", DemoWeb.PageController, :exception
     get "/exit", DemoWeb.PageController, :exit
+
+    live "/liveview/mount_error", DemoWeb.MountErrorLive, :index
+    live "/liveview/multi_error/raise", DemoWeb.MultiErrorLive, :raise
+    live "/liveview/multi_error/throw", DemoWeb.MultiErrorLive, :throw
   end
 end
 

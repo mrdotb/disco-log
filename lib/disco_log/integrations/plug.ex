@@ -100,13 +100,7 @@ defmodule DiscoLog.Integrations.Plug do
 
   @doc false
   def report_error(conn, reason, stack) do
-    unless Process.get(:error_tracker_router_exception_reported) do
-      try do
-        DiscoLog.report(reason, stack, %{plug: build_context(conn)})
-      after
-        Process.put(:error_tracker_router_exception_reported, true)
-      end
-    end
+    DiscoLog.report(reason, stack, %{plug: build_context(conn)})
   end
 
   @doc false
