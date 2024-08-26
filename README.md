@@ -1,6 +1,6 @@
 # DiscoLog
 
-<a title="GitHub CI" href="https://github.com/mrdotb/disco-log/actions"><img src="https://github.com/mrdotb/disco-log/workflows/CI/badge.svg" alt="GitHub CI" /></a>
+<a title="GitHub CI" href="https://github.com/mrdotb/disco-log/actions"><img src="https://github.com/mrdotb/disco-log/workflows/tests/badge.svg" alt="GitHub CI" /></a>
 
 **TODO: Add description**
 
