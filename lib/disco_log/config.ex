@@ -12,13 +12,6 @@ defmodule DiscoLog.Config do
     end
   end
 
-  def error_backend_enabled? do
-    case Application.fetch_env(:disco_log, :enable_error_backend) do
-      {:ok, value} -> value
-      :error -> true
-    end
-  end
-
   def instrument_oban? do
     case Application.fetch_env(:disco_log, :instrument_oban) do
       {:ok, value} -> value

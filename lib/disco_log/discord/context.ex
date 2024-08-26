@@ -90,6 +90,8 @@ defmodule DiscoLog.Discord.Context do
         **Source Function:** `#{error.source_function}`
         **Fingerprint:** `#{error.fingerprint}`
       """
+      # Maybe there is something nice to do with embeds fields
+      # https://discordjs.guide/popular-topics/embeds.html#embed-preview
       # embeds: [
       #   %{
       #     fields: [
@@ -107,12 +109,18 @@ defmodule DiscoLog.Discord.Context do
 
   # defp backtick_wrap(string), do: "`#{string}`"
 
-  defp maybe_put_tag(message, %{"discolog:category" => category}) do
-    Map.put(message, :applied_tags, [Discord.Config.occurrences_channel_tag_id(category)])
+  defp maybe_put_tag(message, context) do
+    context
+    |> Map.keys()
+    |> Enum.filter(&(&1 in Discord.Config.tags()))
+    |> Enum.map(&Discord.Config.occurrences_channel_tag_id(&1))
+    |> case do
+      [] -> message
+      tags -> Map.put(message, :applied_tags, tags)
+    end
   end
 
-  defp maybe_put_tag(message, _), do: message
-
+  # Thread name are limited by 100 characters we use the 16 first characters for the fingerprint
   defp thread_name(error), do: "#{error.fingerprint} #{error.kind}"
 
   defp extract_fingerprint(<<fingerprint::binary-size(16)>> <> " " <> _rest),

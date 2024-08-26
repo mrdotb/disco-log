@@ -325,6 +325,8 @@ defmodule DiscoLog.LoggerHandler do
     %{}
   end
 
+  # Some metadata like PID are not serializable to JSON a better approach is
+  # needed
   defp take_metadata(metadata, keys) do
     Enum.reduce(keys, %{}, fn key, acc ->
       case Map.fetch(metadata, key) do

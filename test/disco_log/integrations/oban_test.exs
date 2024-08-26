@@ -14,7 +14,7 @@ defmodule DiscoLog.ObanTest do
 
     assert error.kind == to_string(RuntimeError)
     assert error.reason == "Exception!"
-    assert is_map(error.context.oban_job)
+    assert is_map(error.context["oban"])
   end
 
   defp attached?(event, function \\ nil) do

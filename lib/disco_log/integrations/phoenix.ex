@@ -90,20 +90,20 @@ defmodule DiscoLog.Integrations.Phoenix do
   end
 
   def handle_event([:phoenix, :live_view, :mount, :start], _, metadata, :no_config) do
-    Context.set(:live_view, %{
+    Context.set("live_view", %{
       "live_view.view" => metadata.socket.view
     })
   end
 
   def handle_event([:phoenix, :live_view, :handle_params, :start], _, metadata, :no_config) do
-    Context.set(:live_view, %{
+    Context.set("live_view", %{
       "live_view.uri" => metadata.uri,
       "live_view.params" => metadata.params
     })
   end
 
   def handle_event([:phoenix, :live_view, :handle_event, :start], _, metadata, :no_config) do
-    Context.set(:live_view, %{
+    Context.set("live_view", %{
       "live_view.event" => metadata.event,
       "live_view.event_params" => metadata.params
     })

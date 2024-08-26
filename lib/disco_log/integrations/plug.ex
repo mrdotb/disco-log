@@ -100,13 +100,13 @@ defmodule DiscoLog.Integrations.Plug do
 
   @doc false
   def report_error(conn, reason, stack) do
-    DiscoLog.report(reason, stack, %{plug: build_context(conn)})
+    DiscoLog.report(reason, stack, %{"plug" => build_context(conn)})
   end
 
   @doc false
   def set_context(%Plug.Conn{} = conn) do
     context = build_context(conn)
-    Context.set(:plug, context)
+    Context.set("plug", context)
   end
 
   defp build_context(%Plug.Conn{} = conn) do

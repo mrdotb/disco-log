@@ -8,10 +8,12 @@ defmodule DiscoLog.Discord.Config do
     type: 4
   }
 
+  @tags ~w(plug live_view oban)s
+
   @occurrences_channel %{
     name: "occurrences",
     type: 15,
-    available_tags: Enum.map(~w(plug phoenix liveview oban)s, &%{name: &1})
+    available_tags: Enum.map(@tags, &%{name: &1})
   }
 
   @info_channel %{
@@ -28,6 +30,7 @@ defmodule DiscoLog.Discord.Config do
   def occurrences_channel, do: @occurrences_channel
   def info_channel, do: @info_channel
   def error_channel, do: @error_channel
+  def tags, do: @tags
 
   def token, do: Application.fetch_env!(:disco_log, :token)
   def guild_id, do: Application.fetch_env!(:disco_log, :guild_id)
