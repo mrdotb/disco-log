@@ -46,12 +46,14 @@ defmodule DiscoLog.Integrations.Oban do
     %{reason: exception, stacktrace: stacktrace, job: job} = metadata
 
     context = %{
-      "job.args" => job.args,
-      "job.attempt" => job.attempt,
-      "job.id" => job.id,
-      "job.priority" => job.priority,
-      "job.queue" => job.queue,
-      "job.worker" => job.worker
+      oban_job: %{
+        args: job.args,
+        attempt: job.attempt,
+        id: job.id,
+        priority: job.priority,
+        queue: job.queue,
+        worker: job.worker
+      }
     }
 
     DiscoLog.report(exception, stacktrace, context)
