@@ -9,7 +9,9 @@ defmodule DiscoLog.MixProject do
       elixir: "~> 1.17",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      package: package(),
+      description: description()
     ]
   end
 
@@ -21,6 +23,19 @@ defmodule DiscoLog.MixProject do
     ]
   end
 
+  defp package do
+    [
+      licenses: ["MIT"],
+      links: %{
+        "Github" => "https://github.com/mrdotb/disco-log"
+      },
+      maintainers: ["mrdotb"],
+      files: ~w(lib LICENSE mix.exs README.md .formatter.exs)s
+    ]
+  end
+
+  defp description, do: "Use Discord as a logging service and error tracking solution"
+
   defp elixirc_paths(:test), do: ["lib", "test/support"]
   defp elixirc_paths(_env), do: ["lib"]
 
@@ -30,7 +45,7 @@ defmodule DiscoLog.MixProject do
       {:jason, "~> 1.1"},
       {:plug, "~> 1.10"},
       {:req, "~> 0.5.0"},
-      # Dev dependencies
+      # Dev & test dependencies
       {:credo, "~> 1.7", only: [:dev, :test]},
       {:ex_doc, "~> 0.33", only: :dev},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
