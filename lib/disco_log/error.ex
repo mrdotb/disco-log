@@ -60,10 +60,6 @@ defmodule DiscoLog.Error do
     {reason, "unknow"}
   end
 
-  # defp normalize_exception(_reason, _) do
-  #   {"unknow", "unknow"}
-  # end
-
   # Fingerprint is used to group the similar errors together
   # Original implementation from https://github.com/elixir-error-tracker/error-tracker/blob/main/lib/error_tracker/schemas/error.ex#L40
   defp fingerprint(kind, source_line, source_function) do

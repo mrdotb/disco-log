@@ -46,11 +46,15 @@ defmodule DemoWeb.PageController do
     <div><a href="/exception">Generate Exception</a></div>
     <div><a href="/exit">Generate Exit</a></div>
 
-
     <h3>Liveview</h3>
     <div><a href="/liveview/mount_error">Generate LiveView mount error</a></div>
     <div><a href="/liveview/multi_error/raise">Generate LiveView raise error</a></div>
     <div><a href="/liveview/multi_error/throw">Generate LiveView throw error</a></div>
+
+    <h3>Logging example</h3>
+    <div><a href="/new_user">Generate a new user log</a></div>
+    <div><a href="/user_upgrade">Generate a pay plan log</a></div>
+    <div><a href="/extra">Generate a log with attachments</a></div>
 
     <h3>Should not generate errors</h3>
     <div><a href="/404">404 Not found</a></div>
@@ -76,10 +80,55 @@ defmodule DemoWeb.PageController do
   end
 end
 
+defmodule DemoWeb.LogController do
+  import Phoenix.Controller
+
+  require Logger
+
+  def init(opts), do: opts
+
+  def call(conn, :new_user) do
+    Logger.info("""
+    🎉 New User Registered!
+    ✨ Username: Bob
+    📧 Email: bob@bob.fr
+    """)
+
+    conn
+    |> redirect(to: "/")
+  end
+
+  def call(conn, :user_upgrade) do
+    Logger.info("""
+    🚀 Upgrade to a Paid Plan!
+    ✨ Username: Bob
+    💼 Plan: Pro
+    """)
+
+    conn
+    |> redirect(to: "/")
+  end
+
+  def call(conn, :extra) do
+    Logger.info("""
+    ✨ Extra Log !
+    📎 With attachments
+    """, extra: %{
+      username: "Bob",
+      id: 1,
+      and: "more",
+      stuff: "here"
+    })
+
+    conn
+    |> redirect(to: "/")
+  end
+end
+
 defmodule DemoWeb.MountErrorLive do
   use Phoenix.LiveView
 
-  def mount(_params, _session, socket) do
+  def mount(_params, _session, _socket) do
     :not_ok
   end
 
@@ -101,11 +150,11 @@ defmodule DemoWeb.MultiErrorLive do
     {:noreply, apply_action(socket, socket.assigns.live_action, params)}
   end
 
-  defp apply_action(socket, :raise, _params) do
+  defp apply_action(_socket, :raise, _params) do
     raise "Error raised in a live view"
   end
 
-  defp apply_action(socket, :throw, _params) do
+  defp apply_action(_socket, :throw, _params) do
     throw "Error throwed in a live view"
   end
 
@@ -141,6 +190,10 @@ defmodule DemoWeb.Router do
     get "/noroute", DemoWeb.PageController, :noroute
     get "/exception", DemoWeb.PageController, :exception
     get "/exit", DemoWeb.PageController, :exit
+
+    get "/new_user", DemoWeb.LogController, :new_user
+    get "/user_upgrade", DemoWeb.LogController, :user_upgrade
+    get "/extra", DemoWeb.LogController, :extra
 
     live "/liveview/mount_error", DemoWeb.MountErrorLive, :index
     live "/liveview/multi_error/raise", DemoWeb.MultiErrorLive, :raise

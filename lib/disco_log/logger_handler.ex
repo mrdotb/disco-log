@@ -52,6 +52,9 @@ defmodule DiscoLog.LoggerHandler do
       excluded_domain?(Map.get(log_meta, :domain, []), config.excluded_domains) ->
         :ok
 
+      log_level == :info and Map.get(log_meta, :application) == :phoenix ->
+        :ok
+
       log_level == :info ->
         log_info(log_event, config)
 
@@ -74,7 +77,8 @@ defmodule DiscoLog.LoggerHandler do
          %LoggerHandler{} = config
        ) do
     metadata = take_metadata(meta, config.metadata)
-    Client.log_info(unicode_chardata, metadata)
+    message = IO.iodata_to_binary(unicode_chardata)
+    Client.log_info(message, metadata)
     :ok
   end
 

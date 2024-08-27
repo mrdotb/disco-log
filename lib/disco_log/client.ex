@@ -59,6 +59,10 @@ defmodule DiscoLog.Client do
     {:ok, error}
   end
 
+  defp maybe_call_before_send({message, metadata}, nil) do
+    {:ok, {message, metadata}}
+  end
+
   defp maybe_call_before_send(error, callback) do
     if result = call_before_send(error, callback) do
       {:ok, result}

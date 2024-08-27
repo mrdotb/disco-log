@@ -16,7 +16,7 @@ config :disco_log,
   enable_logger: true,
   instrument_oban: true,
   instrument_phoenix: true,
-  metadata: []
+  metadata: [:extra]
 
 config :logger,
   # backends: [],
