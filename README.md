@@ -4,6 +4,8 @@
 
 > Use Discord as a logging service and error tracking solution
 
+<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/demo.png" alt="Demo" />
+
 ## Configuration
 
 Take a look at the [Getting Started guide](/guides/getting-started.md)
