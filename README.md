@@ -11,3 +11,10 @@
 Take a look at the [Getting Started guide](/guides/getting-started.md)
 
 ## Development
+
+## Credits
+
+I used code and ideas from the following projects:
+- [error-tracker](https://github.com/elixir-error-tracker/error-tracker)
+- [sentry-elixir](https://github.com/getsentry/sentry-elixir)
+- [appsignal-elixir](https://github.com/appsignal/appsignal-elixir)
