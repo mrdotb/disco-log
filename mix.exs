@@ -11,7 +11,17 @@ defmodule DiscoLog.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       package: package(),
-      description: description()
+      description: description(),
+      docs: [
+        main: "DiscoLog",
+        formatters: ["html"],
+        extra_section: "GUIDES",
+        extras: [
+          "guides/getting-started.md"
+        ],
+        api_reference: false,
+        main: "getting-started"
+      ]
     ]
   end
 

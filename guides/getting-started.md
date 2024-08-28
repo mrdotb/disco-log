@@ -1,6 +1,10 @@
 # Getting Started
 
+This guide is an introduction to DiscoLog. It will guide you through the setup of DiscoLog and how to use it.
+
 ## Install DiscoLog
+
+The first step is to add DiscoLog to your applicaiton is to declare the package as a dependency in your `mix.exs` file.
 
 ```elixir
 defp deps do
@@ -10,21 +14,24 @@ defp deps do
 end
 ```
 
+Then run the following command to fetch the dependencies.
+
 ```bash
 mix deps.get
 ```
 
-## Setup Discord Server
+## Setup the Discord Server
 
-Register a [Discord Account](https://discord.com/)
+You need to register a [Discord Account](https://discord.com/)
 
-### Create a community server
+### Create a community Discord Server
+*A Discord community server needs to have a forum-type channel, which we use for error tracking.*
 
 <img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/1-create-server.png" alt="Create Server step 1" />
 <img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/2-create-server.png" alt="Create Server step 2" />
 <img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/3-create-server.png" alt="Create Server step 3" />
 
-### Edit server settings
+### Edit the Discord Server settings
 
 *Right-click on the server and select `Server Settings` > `Community Settings`*
 <img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/4-edit-server.png" alt="Edit Server step 4" />
@@ -37,22 +44,24 @@ Register a [Discord Account](https://discord.com/)
 
 <img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/9-copy-server-id.png" alt="Edit Server step 9" />
 
-## Create Discord Bot
+## Create a Discord Bot
 
 Go to the [developers portal](https://discord.com/developers/applications)
 
 <img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/10-create-bot.png" alt="Create bot 1" />
 <img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/11-create-bot.png" alt="Create bot 2" />
 
-*Disable User Install and add the scope and permissions like in the screenshot.*
+*Disable User Install and add the scope `bot` and the permissions `Attach Files`, `Manage Channels`, `Manage Threads`, `Send Messages`, `Send Messages in Threads`*
 <img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/12-bot-settings.png" alt="Bot settings" />
-*Copy the bot token, it will be needed later*
+
+*Generate and copy the bot token, it will be needed later*
 <img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/13-bot-token.png" alt="Bot token" />
 
 ## Add Bot to your Server
 
-*Go to the installation menu and open the installation link**
+*Go to the installation menu and open the installation link*
 <img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/14-install-bot.png" alt="Instal Bot on your server step 1" />
+*Follow the steps*
 <img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/15-install-bot.png" alt="Instal Bot on your server step 2" />
 <img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/16-install-bot.png" alt="Instal Bot on your server step 3" />
 <img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/17-install-bot.png" alt="Instal Bot on your server step 4" />
@@ -60,7 +69,7 @@ Go to the [developers portal](https://discord.com/developers/applications)
 
 ## Create DiscoLog channels
 
-Edit your `config/dev.exs` and add the following configuration.
+Edit your `config/dev.exs` and add the following configuration with the bot token and the server ID you copied earlier.
 
 ```elixir
 config :disco_log,

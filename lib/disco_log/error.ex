@@ -6,6 +6,16 @@ defmodule DiscoLog.Error do
   alias __MODULE__
   alias DiscoLog.Stacktrace
 
+  @type t :: %Error{
+          kind: atom() | String.t(),
+          reason: String.t(),
+          source_line: String.t(),
+          source_function: String.t(),
+          context: any(),
+          stacktrace: Stacktrace.t(),
+          fingerprint: String.t()
+        }
+
   defstruct ~w(kind reason source_line source_function context stacktrace fingerprint)a
 
   def new(exception, stacktrace, context) do

@@ -4,6 +4,8 @@
 
 > Use Discord as a logging service and error tracking solution
 
+[video demo](https://youtu.be/kEkp3fJwri0)
+
 <img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/demo.png" alt="Demo" />
 
 ## Configuration
@@ -12,9 +14,17 @@ Take a look at the [Getting Started guide](/guides/getting-started.md)
 
 ## Development
 
+You will need a Discord server and a bot to develop on DiscoLog.
+
+```bash
+cp config/dev.examples.exs config/dev.exs
+```
+
+We have a `dev.exs` script that you can use to test DiscoLog locally.
+
 ## Credits
 
-I used code and ideas from the following projects:
+Big thanks to the following projects for inspiration and ideas:
 - [error-tracker](https://github.com/elixir-error-tracker/error-tracker)
 - [sentry-elixir](https://github.com/getsentry/sentry-elixir)
 - [appsignal-elixir](https://github.com/appsignal/appsignal-elixir)

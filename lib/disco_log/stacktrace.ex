@@ -8,8 +8,21 @@ defmodule DiscoLog.Stacktrace do
 
   defmodule Line do
     @moduledoc false
+
+    @type t :: %__MODULE__{
+            application: String.t(),
+            module: String.t(),
+            function: String.t(),
+            arity: non_neg_integer(),
+            file: String.t() | nil,
+            line: non_neg_integer() | nil
+          }
     defstruct ~w(application module function arity file line)a
   end
+
+  @type t :: %Stacktrace{
+          lines: [Line.t()]
+        }
 
   defstruct ~w(lines)a
 
