@@ -1,6 +1,8 @@
 # 📜 DiscoLog
 
 <a title="GitHub CI" href="https://github.com/mrdotb/disco-log/actions"><img src="https://github.com/mrdotb/disco-log/workflows/Tests/badge.svg" alt="GitHub CI" /></a>
+<a title="Latest release" href="https://hex.pm/packages/disco_log"><img src="https://img.shields.io/hexpm/v/disco_log.svg" alt="Latest release" /></a>
+<a title="View documentation" href="https://hexdocs.pm/disco_log"><img src="https://img.shields.io/badge/hex.pm-docs-blue.svg" alt="View documentation" /></a>
 
 > Use Discord as a logging service and error tracking solution
 
