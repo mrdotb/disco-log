@@ -19,10 +19,22 @@ defmodule DiscoLog.LoggerHandlerTest do
       assert_receive {^ref, {"Info message", %{}}}
     end
 
-    test "info log report type", %{sender_ref: ref} do
+    test "info log report type map", %{sender_ref: ref} do
       Logger.info(%{message: "Info message"})
 
       assert_receive {^ref, {%{message: "Info message"}, %{}}}
+    end
+
+    test "info log report type keyword", %{sender_ref: ref} do
+      Logger.info(message: "Info message")
+
+      assert_receive {^ref, {%{message: "Info message"}, %{}}}
+    end
+
+    test "info log report type struct", %{sender_ref: ref} do
+      Logger.info(%Foo{})
+
+      assert_receive {^ref, {%{bar: nil, __struct__: Foo}, %{}}}
     end
 
     test "info log erlang format", %{sender_ref: ref} do
@@ -38,10 +50,22 @@ defmodule DiscoLog.LoggerHandlerTest do
       assert_receive {^ref, {"Error message", %{}}}
     end
 
-    test "error log report type", %{sender_ref: ref} do
+    test "error log report type struct", %{sender_ref: ref} do
+      Logger.error(%Foo{})
+
+      assert_receive {^ref, {%Foo{}, %{}}}
+    end
+
+    test "error log report type map", %{sender_ref: ref} do
       Logger.error(%{message: "Error message"})
 
       assert_receive {^ref, {%{message: "Error message"}, %{}}}
+    end
+
+    test "error log report type keyword", %{sender_ref: ref} do
+      Logger.error(message: "Error message")
+
+      assert_receive {^ref, {[message: "Error message"], %{}}}
     end
 
     test "error log erlang format", %{sender_ref: ref} do

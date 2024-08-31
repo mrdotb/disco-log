@@ -82,14 +82,13 @@ defmodule DiscoLog.LoggerHandler do
     :ok
   end
 
-  # "report" here is of type logger:report/0, which is a map or keyword list.
+  # "report" here is of type logger:report/0, which is a struct, map or keyword list.
   defp log_info(
          %{msg: {:report, report}, meta: meta},
          %LoggerHandler{} = config
        ) do
     metadata = take_metadata(meta, config.metadata)
-    message = Map.new(report)
-    Client.log_info(message, metadata)
+    log_info_report(report, metadata)
     :ok
   end
 
@@ -119,30 +118,14 @@ defmodule DiscoLog.LoggerHandler do
     log_from_crash_reason(meta[:crash_reason], unicode_chardata, metadata)
   end
 
-  # "report" here is of type logger:report/0, which is a map or keyword list.
+  # "report" here is of type logger:report/0, which is a struct, map or keyword list.
   defp log_error(
          %{msg: {:report, report}, meta: meta},
          %LoggerHandler{} = config
        ) do
     metadata = take_metadata(meta, config.metadata)
-
-    case Map.new(report) do
-      %{reason: {exception, stacktrace}} when is_exception(exception) and is_list(stacktrace) ->
-        context = Map.put(Context.get(), :metadata, metadata)
-        error = Error.new(exception, stacktrace, context)
-        Client.send_error(error)
-
-      %{reason: {reason, stacktrace}} when is_list(stacktrace) ->
-        context = Map.put(Context.get(), :metadata, metadata)
-        error = Error.new(reason, stacktrace, context)
-        Client.send_error(error)
-
-      %{reason: reason} ->
-        Client.log_error(reason, metadata)
-
-      _ ->
-        Client.log_error(report, metadata)
-    end
+    log_error_report(report, metadata)
+    :ok
   end
 
   # erlang `:logger` support this format ex `:logger.error("Hello ~s", ["world"])`
@@ -338,5 +321,45 @@ defmodule DiscoLog.LoggerHandler do
         :error -> acc
       end
     end)
+  end
+
+  defp log_info_report(report, metadata) when is_struct(report) do
+    report
+    |> Map.from_struct()
+    |> Map.put(:__struct__, report.__struct__)
+    |> Client.log_info(metadata)
+  end
+
+  defp log_info_report(report, metadata) do
+    report
+    |> Map.new()
+    |> Client.log_info(metadata)
+  end
+
+  defp log_error_report(report, metadata) when is_struct(report) do
+    report
+    |> Map.from_struct()
+    |> Map.put(:__struct__, report.__struct__)
+    |> Client.log_error(metadata)
+  end
+
+  defp log_error_report(report, metadata) do
+    case Map.new(report) do
+      %{reason: {exception, stacktrace}} when is_exception(exception) and is_list(stacktrace) ->
+        context = Map.put(Context.get(), :metadata, metadata)
+        error = Error.new(exception, stacktrace, context)
+        Client.send_error(error)
+
+      %{reason: {reason, stacktrace}} when is_list(stacktrace) ->
+        context = Map.put(Context.get(), :metadata, metadata)
+        error = Error.new(reason, stacktrace, context)
+        Client.send_error(error)
+
+      %{reason: reason} ->
+        Client.log_error(reason, metadata)
+
+      _ ->
+        Client.log_error(report, metadata)
+    end
   end
 end
