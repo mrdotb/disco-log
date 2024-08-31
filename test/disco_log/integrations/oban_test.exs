@@ -1,5 +1,5 @@
 defmodule DiscoLog.ObanTest do
-  use DiscoLog.Test.Case, async: true
+  use DiscoLog.Test.Case, async: false
 
   alias DiscoLog.Integrations
 
