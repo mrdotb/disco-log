@@ -27,5 +27,4 @@ config :logger,
 
 # Mocks module
 config :disco_log,
-  utils: DiscoLog.UtilsMock,
   discord: DiscoLog.DiscordMock

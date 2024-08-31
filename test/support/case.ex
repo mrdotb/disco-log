@@ -40,27 +40,28 @@ defmodule DiscoLog.Test.Case do
   end
 
   @doc """
-  Sends telemetry events as messages to the current process.
-
-  This allows test cases to check that telemetry events are fired with:
-
-      assert_receive {:telemetry_event, event, measurements, metadata}
+  Asserts that the given telemetry event is attached to the given module.
   """
-  def attach_telemetry do
-    :telemetry.attach_many(
-      "telemetry-test",
-      [
-        [:disco_log, :error, :new],
-        [:disco_log, :error, :resolved],
-        [:disco_log, :error, :unresolved],
-        [:disco_log, :occurrence, :new]
-      ],
-      &__MODULE__._send_telemetry/4,
-      nil
-    )
+  def event_attached?(event, module) do
+    event
+    |> :telemetry.list_handlers()
+    |> Enum.any?(fn %{id: id} -> id == module end)
   end
 
-  def _send_telemetry(event, measurements, metadata, _opts) do
-    send(self(), {:telemetry_event, event, measurements, metadata})
+  @doc """
+  Setup a register before send function for testing purposes.
+  """
+  def register_before_send(context) do
+    pid = self()
+    ref = make_ref()
+
+    Application.put_env(:disco_log, :before_send, fn
+      error ->
+        send(pid, {ref, error})
+        # prevent the discord log to be send by return false
+        false
+    end)
+
+    Map.put(context, :sender_ref, ref)
   end
 end
