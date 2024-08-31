@@ -234,23 +234,6 @@ defmodule DiscoLog.LoggerHandlerTest do
     end
   end
 
-  defp register_before_send(_context) do
-    pid = self()
-    ref = make_ref()
-
-    Application.put_env(:disco_log, :before_send, fn
-      {message, metadata} ->
-        send(pid, {ref, {message, metadata}})
-        false
-
-      error ->
-        send(pid, {ref, error})
-        false
-    end)
-
-    %{sender_ref: ref}
-  end
-
   defp run_and_catch_exit(test_genserver_pid, fun) do
     catch_exit(DiscoLog.TestGenServer.run(test_genserver_pid, fun))
   end

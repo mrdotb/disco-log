@@ -36,14 +36,15 @@ defmodule DiscoLog.Integrations.Oban do
   ]
 
   @doc false
-  def attach do
-    if DiscoLog.Utils.application_spec(:oban) do
+  def attach(force_attachment \\ false) do
+    if Application.spec(:oban) || force_attachment do
       :telemetry.attach_many(__MODULE__, @events, &__MODULE__.handle_event/4, :no_config)
     end
   end
 
   def handle_event([:oban, :job, :exception], _measurements, metadata, :no_config) do
     %{reason: exception, stacktrace: stacktrace, job: job} = metadata
+    state = Map.get(metadata, :state, :failure)
 
     context = %{
       "oban" => %{
@@ -52,7 +53,8 @@ defmodule DiscoLog.Integrations.Oban do
         "id" => job.id,
         "priority" => job.priority,
         "queue" => job.queue,
-        "worker" => job.worker
+        "worker" => job.worker,
+        "state" => state
       }
     }
 
