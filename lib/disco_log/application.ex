@@ -22,6 +22,10 @@ defmodule DiscoLog.Application do
       Integrations.Oban.attach()
     end
 
+    if Config.instrument_tesla?() do
+      Integrations.Tesla.attach()
+    end
+
     children = [
       {Storage, []},
       {Dedupe, []}

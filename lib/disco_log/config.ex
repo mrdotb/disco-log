@@ -26,6 +26,13 @@ defmodule DiscoLog.Config do
     end
   end
 
+  def instrument_tesla? do
+    case Application.fetch_env(:disco_log, :instrument_tesla) do
+      {:ok, value} -> value
+      :error -> true
+    end
+  end
+
   def logger_config do
     config = Application.get_all_env(:disco_log)
     Keyword.take(config, @logger_config_keys)
