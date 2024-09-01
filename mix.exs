@@ -54,7 +54,7 @@ defmodule DiscoLog.MixProject do
     [
       {:jason, "~> 1.1"},
       {:plug, "~> 1.10"},
-      {:req, "~> 0.5.0"},
+      {:req, "~> 0.5.6"},
       # Dev & test dependencies
       {:credo, "~> 1.7", only: [:dev, :test]},
       {:ex_doc, "~> 0.33", only: :dev},
