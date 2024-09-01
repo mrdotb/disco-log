@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ---
 
-## [0.2.0] - 2024-08-28]
+
+## [0.3.0] - 2024-09-01]
+- Bump Req version
+- Enable Tesla integration by default
+
+## [0.2.0] - 2024-08-31]
 - Fix some bugs
 - Add new tesla integration
 
