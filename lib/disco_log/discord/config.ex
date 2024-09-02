@@ -39,6 +39,13 @@ defmodule DiscoLog.Discord.Config do
   def info_channel_id, do: Application.fetch_env!(:disco_log, :info_channel_id)
   def error_channel_id, do: Application.fetch_env!(:disco_log, :error_channel_id)
 
+  def enable_log? do
+    case Application.fetch_env(:disco_log, :enable_discord_log) do
+      {:ok, value} -> value
+      :error -> false
+    end
+  end
+
   def occurrences_channel_tag_id(tag) do
     :disco_log
     |> Application.fetch_env!(:occurrences_channel_tags)

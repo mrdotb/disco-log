@@ -131,12 +131,13 @@ defmodule DiscoLog.Discord.Client do
       base_url: @base_url,
       headers: [{"Authorization", "Bot #{Discord.Config.token()}"}]
     )
-    |> req_logger()
+    |> maybe_add_debug_log(Discord.Config.enable_log?())
   end
 
-  defp req_logger(request) do
-    request
-    |> Req.Request.append_response_steps(log_response: &log_response/1)
+  defp maybe_add_debug_log(request, false), do: request
+
+  defp maybe_add_debug_log(request, true) do
+    Req.Request.append_response_steps(request, log_response: &log_response/1)
   end
 
   defp log_response({req, res} = result) do
