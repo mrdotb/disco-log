@@ -5,6 +5,13 @@ defmodule DiscoLog.Config do
 
   @logger_config_keys ~w(metadata)a
 
+  def enabled? do
+    case Application.fetch_env(:disco_log, :enable) do
+      {:ok, value} -> value
+      :error -> true
+    end
+  end
+
   def logger_enabled? do
     case Application.fetch_env(:disco_log, :enable_logger) do
       {:ok, value} -> value

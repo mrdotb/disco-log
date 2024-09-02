@@ -10,6 +10,21 @@ defmodule DiscoLog.Application do
   alias DiscoLog.Storage
 
   def start(_type, _args) do
+    if Config.enabled?() do
+      start_integration()
+
+      children = [
+        {Storage, []},
+        {Dedupe, []}
+      ]
+
+      Supervisor.start_link(children, strategy: :one_for_one, name: __MODULE__)
+    else
+      Supervisor.start_link([], strategy: :one_for_one, name: __MODULE__)
+    end
+  end
+
+  defp start_integration do
     if Config.logger_enabled?() do
       :logger.add_handler(:disco_log_handler, LoggerHandler, %{})
     end
@@ -25,12 +40,5 @@ defmodule DiscoLog.Application do
     if Config.instrument_tesla?() do
       Integrations.Tesla.attach()
     end
-
-    children = [
-      {Storage, []},
-      {Dedupe, []}
-    ]
-
-    Supervisor.start_link(children, strategy: :one_for_one, name: __MODULE__)
   end
 end
