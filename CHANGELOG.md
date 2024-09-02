@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ---
 
+## [0.4.0] - 2024-09-01]
+- Allow config to disable DiscoLog in env / test environments
+- Fix an issue with logger handler and struct
 
 ## [0.3.0] - 2024-09-01]
 - Bump Req version
