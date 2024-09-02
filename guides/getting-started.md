@@ -84,4 +84,26 @@ mix disco_log.create
 ```
 
 It will create and output the rest of the necessary configuration for you.
-Use this configuration for your production environment or add it to your dev config if you just want to test.
+Use this configuration for your production environment or add it to your dev config if you want to test.
+
+Confirm that everything is working smoothly by running the following mix command it will put a log in each channels.
+```elixir
+mix disco_log.sample
+```
+
+*How it should look like*
+<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/18-sample-log.png" alt="Sample log 1" />
+<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/19-sample-log.png" alt="Sample log 2" />
+<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/20-sample-log.png" alt="Sample log 3" />
+
+
+## After setup
+
+When you confirmed that the setup is working you should put this config to disable DiscoLog in `dev.exs` and `test.exs` env.
+
+```elixir
+config :disco_log,
+  enable: false
+```
+
+Enjoy using DiscoLog!
