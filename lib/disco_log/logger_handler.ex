@@ -326,7 +326,7 @@ defmodule DiscoLog.LoggerHandler do
   defp log_info_report(report, metadata) when is_struct(report) do
     report
     |> Map.from_struct()
-    |> Map.put(:__struct__, report.__struct__)
+    |> Map.put(:__struct__, to_string(report.__struct__))
     |> Client.log_info(metadata)
   end
 
@@ -339,7 +339,7 @@ defmodule DiscoLog.LoggerHandler do
   defp log_error_report(report, metadata) when is_struct(report) do
     report
     |> Map.from_struct()
-    |> Map.put(:__struct__, report.__struct__)
+    |> Map.put(:__struct__, to_string(report.__struct__))
     |> Client.log_error(metadata)
   end
 

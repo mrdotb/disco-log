@@ -34,7 +34,7 @@ defmodule DiscoLog.LoggerHandlerTest do
     test "info log report type struct", %{sender_ref: ref} do
       Logger.info(%Foo{})
 
-      assert_receive {^ref, {%{bar: nil, __struct__: Foo}, %{}}}
+      assert_receive {^ref, {%{__struct__: "Elixir.Foo", bar: nil}, %{}}}
     end
 
     test "info log erlang format", %{sender_ref: ref} do
@@ -53,7 +53,7 @@ defmodule DiscoLog.LoggerHandlerTest do
     test "error log report type struct", %{sender_ref: ref} do
       Logger.error(%Foo{})
 
-      assert_receive {^ref, {%Foo{}, %{}}}
+      assert_receive {^ref, {%{__struct__: "Elixir.Foo", bar: nil}, %{}}}
     end
 
     test "error log report type map", %{sender_ref: ref} do
