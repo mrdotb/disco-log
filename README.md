@@ -6,7 +6,7 @@
 
 > Use Discord as a logging service and error tracking solution
 
-[video demo](https://youtu.be/kEkp3fJwri0)
+[video demo](https://youtu.be/886RByFPI3s)
 
 <img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/demo.png" alt="Demo" />
 
