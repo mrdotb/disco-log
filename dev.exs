@@ -50,6 +50,7 @@ defmodule DemoWeb.PageController do
     <div><a href="/liveview/mount_error">Generate LiveView mount error</a></div>
     <div><a href="/liveview/multi_error/raise">Generate LiveView raise error</a></div>
     <div><a href="/liveview/multi_error/throw">Generate LiveView throw error</a></div>
+    <div><a href="/liveview/component">Generate LiveView Component error</a></div>
 
     <h3>Logging example</h3>
     <div><a href="/new_user">Generate a new user log</a></div>
@@ -165,6 +166,35 @@ defmodule DemoWeb.MultiErrorLive do
   end
 end
 
+defmodule DemoWeb.ErrorComponent do
+  use Phoenix.LiveComponent
+
+  def render(assigns) do
+    ~H"""
+    <div>error</div>
+    """
+  end
+
+  def update(_assigns, socket) do
+    raise "Error raised in a live component"
+    {:ok, socket}
+  end
+end
+
+defmodule DemoWeb.ComponentErrorLive do
+  use Phoenix.LiveView
+
+  def mount(_params, _session, socket) do
+    {:ok, socket}
+  end
+
+  def render(assigns) do
+    ~H"""
+    <.live_component id="error-component" module={DemoWeb.ErrorComponent} />
+    """
+  end
+end
+
 defmodule DiscoLogDevWeb.ErrorView do
   def render("404.html", _assigns) do
     "This is a 404"
@@ -198,6 +228,7 @@ defmodule DemoWeb.Router do
     live "/liveview/mount_error", DemoWeb.MountErrorLive, :index
     live "/liveview/multi_error/raise", DemoWeb.MultiErrorLive, :raise
     live "/liveview/multi_error/throw", DemoWeb.MultiErrorLive, :throw
+    live "/liveview/component", DemoWeb.ComponentErrorLive, :update_raise
   end
 end
 

@@ -59,9 +59,10 @@ defmodule DiscoLog.Integrations.Phoenix do
     [:phoenix, :live_view, :mount, :exception],
     [:phoenix, :live_view, :handle_params, :start],
     [:phoenix, :live_view, :handle_params, :exception],
-    [:phoenix, :live_view, :handle_event, :start],
     [:phoenix, :live_view, :handle_event, :exception],
-    [:phoenix, :live_view, :render, :exception]
+    [:phoenix, :live_view, :render, :exception],
+    [:phoenix, :live_component, :update, :exception],
+    [:phoenix, :live_component, :handle_event, :exception]
   ]
 
   @doc false
@@ -91,25 +92,56 @@ defmodule DiscoLog.Integrations.Phoenix do
 
   def handle_event([:phoenix, :live_view, :mount, :start], _, metadata, :no_config) do
     Context.set("live_view", %{
-      "live_view.view" => metadata.socket.view
+      "view" => metadata.socket.view
     })
   end
 
   def handle_event([:phoenix, :live_view, :handle_params, :start], _, metadata, :no_config) do
     Context.set("live_view", %{
-      "live_view.uri" => metadata.uri,
-      "live_view.params" => metadata.params
+      "uri" => metadata.uri,
+      "params" => metadata.params
     })
   end
 
-  def handle_event([:phoenix, :live_view, :handle_event, :start], _, metadata, :no_config) do
-    Context.set("live_view", %{
-      "live_view.event" => metadata.event,
-      "live_view.event_params" => metadata.params
-    })
+  def handle_event([:phoenix, :live_view, :handle_event, :exception], _, metadata, :no_config) do
+    context = %{
+      "live_view" => %{
+        "event" => metadata.event,
+        "event_params" => metadata.event_params
+      }
+    }
+
+    DiscoLog.report({metadata.kind, metadata.reason}, metadata.stacktrace, context)
   end
 
   def handle_event([:phoenix, :live_view, _action, :exception], _, metadata, :no_config) do
     DiscoLog.report({metadata.kind, metadata.reason}, metadata.stacktrace)
+  end
+
+  def handle_event([:phoenix, :live_component, :update, :exception], _, metadata, :no_config) do
+    context = %{
+      "live_view" => %{
+        "component" => metadata.component
+      }
+    }
+
+    DiscoLog.report({metadata.kind, metadata.reason}, metadata.stacktrace, context)
+  end
+
+  def handle_event(
+        [:phoenix, :live_component, :handle_event, :exception],
+        _,
+        metadata,
+        :no_config
+      ) do
+    context = %{
+      "live_view" => %{
+        "component" => metadata.component,
+        "event" => metadata.event,
+        "event_params" => metadata.event_params
+      }
+    }
+
+    DiscoLog.report({metadata.kind, metadata.reason}, metadata.stacktrace, context)
   end
 end
