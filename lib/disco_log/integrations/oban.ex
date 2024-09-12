@@ -58,6 +58,11 @@ defmodule DiscoLog.Integrations.Oban do
       }
     }
 
+    stacktrace =
+      if stacktrace == [],
+        do: [{String.to_existing_atom("Elixir." <> job.worker), :perform, 2, []}],
+        else: stacktrace
+
     DiscoLog.report(exception, stacktrace, context)
   end
 end
