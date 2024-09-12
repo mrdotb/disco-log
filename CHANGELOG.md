@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ---
+## [0.5.0] - 2024-09-12]
+- Oban trace improvements
+- LiveComponent trace improvements
+- Fix double error reporting on some plug errors
 
 ## [0.4.0] - 2024-09-01]
 - Allow config to disable DiscoLog in env / test environments
