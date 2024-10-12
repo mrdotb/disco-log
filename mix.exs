@@ -1,17 +1,21 @@
 defmodule DiscoLog.MixProject do
   use Mix.Project
 
+  @source_url "https://github.com/mrdotb/disco-log"
+  @version "0.5.1"
+
   def project do
     [
       app: :disco_log,
       aliases: aliases(),
-      version: "0.5.0",
+      version: @version,
       elixir: "~> 1.17",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       package: package(),
       description: description(),
+      source_url: @source_url,
       docs: [
         main: "DiscoLog",
         formatters: ["html"],
@@ -56,6 +60,7 @@ defmodule DiscoLog.MixProject do
       {:plug, "~> 1.10"},
       {:req, "~> 0.5.6"},
       # Dev & test dependencies
+      {:git_ops, "~> 2.6.1", only: [:dev]},
       {:credo, "~> 1.7", only: [:dev, :test]},
       {:ex_doc, "~> 0.33", only: :dev},
       {:phoenix_live_reload, "~> 1.2", only: :dev},

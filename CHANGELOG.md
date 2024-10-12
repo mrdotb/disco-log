@@ -1,11 +1,19 @@
-# Changelog
+# Change Log
 
 All notable changes to this project will be documented in this file.
+See [Conventional Commits](Https://conventionalcommits.org) for commit guidelines.
 
-The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
-and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
+<!-- changelog -->
 
----
+## [v0.5.1](https://github.com/mrdotb/disco-log/compare/v0.5.1...v0.5.1) (2024-10-12)
+
+
+
+
+### Bug Fixes:
+
+* write a custom JSON encoder to prevent crashing the handler
+
 ## [0.5.0] - 2024-09-12]
 - Oban trace improvements
 - LiveComponent trace improvements
