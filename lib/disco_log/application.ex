@@ -5,6 +5,7 @@ defmodule DiscoLog.Application do
 
   alias DiscoLog.Config
   alias DiscoLog.Dedupe
+  alias DiscoLog.Discord.Presence
   alias DiscoLog.Integrations
   alias DiscoLog.LoggerHandler
   alias DiscoLog.Storage
@@ -16,6 +17,7 @@ defmodule DiscoLog.Application do
       children = [
         {Storage, []},
         {Dedupe, []}
+        # {Presence, []}
       ]
 
       Supervisor.start_link(children, strategy: :one_for_one, name: __MODULE__)
