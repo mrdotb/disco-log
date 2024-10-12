@@ -8,6 +8,7 @@ defmodule DiscoLog.Discord.Client do
   require Logger
 
   @base_url "https://discord.com/api/v10"
+  @version DiscoLog.MixProject.project()[:version]
 
   def list_channels(opts) do
     guild_id = Keyword.get(opts, :guild_id, Discord.Config.guild_id())
@@ -129,7 +130,10 @@ defmodule DiscoLog.Discord.Client do
   defp client do
     Req.new(
       base_url: @base_url,
-      headers: [{"Authorization", "Bot #{Discord.Config.token()}"}]
+      headers: [
+        {"User-Agent", "DiscoLog (https://github.com/mrdotb/disco-log, #{@version})"},
+        {"Authorization", "Bot #{Discord.Config.token()}"}
+      ]
     )
     |> maybe_add_debug_log(Discord.Config.enable_log?())
   end
