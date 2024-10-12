@@ -4,6 +4,7 @@ defmodule DiscoLog.Discord.Context do
   """
 
   alias DiscoLog.Discord
+  alias DiscoLog.Encoder
 
   def fetch_or_create_channel(channels, channel_config, parent_id) do
     case Enum.find(channels, &find_channel(&1, channel_config)) do
@@ -60,7 +61,7 @@ defmodule DiscoLog.Discord.Context do
   defp prepare_occurrence_thread_fields(error) do
     [
       payload_json:
-        Jason.encode!(
+        Encoder.encode!(
           %{
             name: thread_name(error),
             message: prepare_error_message(error)
@@ -74,7 +75,7 @@ defmodule DiscoLog.Discord.Context do
 
   defp prepare_occurrence_message_fields(error) do
     [
-      payload_json: Jason.encode!(prepare_error_message(error))
+      payload_json: Encoder.encode!(prepare_error_message(error))
     ]
     |> put_stacktrace(error.stacktrace)
     |> maybe_put_context(error.context)
@@ -136,14 +137,14 @@ defmodule DiscoLog.Discord.Context do
     Keyword.put(
       fields,
       :context,
-      {Jason.encode!(context, pretty: true), filename: "context.json"}
+      {Encoder.encode!(context, pretty: true), filename: "context.json"}
     )
   end
 
   def create_message(channel_id, message, metadata) when is_binary(message) do
     [
       payload_json:
-        Jason.encode!(%{
+        Encoder.encode!(%{
           content: message
         })
     ]
@@ -153,7 +154,7 @@ defmodule DiscoLog.Discord.Context do
 
   def create_message(channel_id, message, metadata) when is_map(message) do
     [
-      message: {Jason.encode!(message, pretty: true), filename: "message.json"}
+      message: {Encoder.encode!(message, pretty: true), filename: "message.json"}
     ]
     |> maybe_put_metadata(metadata)
     |> Discord.Client.create_form_message(channel_id: channel_id)
@@ -165,7 +166,7 @@ defmodule DiscoLog.Discord.Context do
     Keyword.put(
       fields,
       :metadata,
-      {Jason.encode!(metadata, pretty: true), filename: "metadata.json"}
+      {Encoder.encode!(metadata, pretty: true), filename: "metadata.json"}
     )
   end
 
