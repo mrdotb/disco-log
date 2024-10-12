@@ -42,6 +42,8 @@ You need to register a [Discord Account](https://discord.com/)
 
 *Copy the server ID, it will be needed later*
 
++*If you don't see `Copy Server ID` in the UI, enable developer mode in Settings -> Advanced -> Developer Mode.*
+
 <img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/9-copy-server-id.png" alt="Edit Server step 9" />
 
 ## Create a Discord Bot
@@ -75,7 +77,7 @@ Edit your `config/dev.exs` and add the following configuration with the bot toke
 config :disco_log,
   otp_app: :app_name,
   token: "YOUR_BOT.TOKEN",
-  guild_id: "YOUR_SERVER_ID",
+  guild_id: "YOUR_SERVER_ID"
 ```
 
 Run the mix task
