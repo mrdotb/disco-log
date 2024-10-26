@@ -74,6 +74,12 @@ defmodule DiscoLog.LoggerHandlerTest do
       assert_receive {^ref, {"Hello world", %{}}}
     end
 
+    test "error log IO data", %{sender_ref: ref} do
+      Logger.error(["Hello", " ", "world"])
+
+      assert_receive {^ref, {"Hello world", %{}}}
+    end
+
     test "a logged raised exception is", %{sender_ref: ref} do
       Task.start(fn ->
         raise "Unique Error"

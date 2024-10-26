@@ -192,7 +192,8 @@ defmodule DiscoLog.LoggerHandler do
          chardata_message,
          metadata
        ) do
-    Client.log_error(chardata_message, metadata)
+    message = IO.iodata_to_binary(chardata_message)
+    Client.log_error(message, metadata)
     :ok
   end
 
