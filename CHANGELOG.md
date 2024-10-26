@@ -5,6 +5,15 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v0.5.2](https://github.com/mrdotb/disco-log/compare/v0.5.1...v0.5.2) (2024-10-26)
+
+
+
+
+### Bug Fixes:
+
+* logger handler not handling IO data
+
 ## [v0.5.1](https://github.com/mrdotb/disco-log/compare/v0.5.1...v0.5.1) (2024-10-12)
 
 
