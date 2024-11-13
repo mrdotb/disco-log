@@ -166,7 +166,7 @@ defmodule DiscoLog.Discord.Context do
     Keyword.put(
       fields,
       :metadata,
-      {Encoder.encode!(metadata, pretty: true), filename: "metadata.json"}
+      {inspect(metadata, pretty: true), filename: "metadata.ex"}
     )
   end
 
