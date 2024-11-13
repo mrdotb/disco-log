@@ -5,6 +5,15 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v0.6.0](https://github.com/mrdotb/disco-log/compare/v0.5.2...v0.6.0) (2024-11-13)
+
+
+
+
+### Features:
+
+* inspect metadata instead of serializing it
+
 ## [v0.5.2](https://github.com/mrdotb/disco-log/compare/v0.5.1...v0.5.2) (2024-10-26)
 
 
