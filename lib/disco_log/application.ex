@@ -16,8 +16,8 @@ defmodule DiscoLog.Application do
 
       children = [
         {Storage, []},
-        {Dedupe, []}
-        # {Presence, []}
+        {Dedupe, []},
+        {Presence, []}
       ]
 
       Supervisor.start_link(children, strategy: :one_for_one, name: __MODULE__)

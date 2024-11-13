@@ -58,6 +58,7 @@ defmodule DiscoLog.MixProject do
     [
       {:jason, "~> 1.1"},
       {:mint_web_socket, "~> 1.0"},
+      {:castore, "~> 1.0"},
       {:plug, "~> 1.10"},
       {:req, "~> 0.5.6"},
       # Dev & test dependencies
