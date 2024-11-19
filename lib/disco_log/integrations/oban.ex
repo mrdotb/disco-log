@@ -36,13 +36,13 @@ defmodule DiscoLog.Integrations.Oban do
   ]
 
   @doc false
-  def attach(force_attachment \\ false) do
+  def attach(config, force_attachment \\ false) do
     if Application.spec(:oban) || force_attachment do
-      :telemetry.attach_many(__MODULE__, @events, &__MODULE__.handle_event/4, :no_config)
+      :telemetry.attach_many(__MODULE__, @events, &__MODULE__.handle_event/4, config)
     end
   end
 
-  def handle_event([:oban, :job, :exception], _measurements, metadata, :no_config) do
+  def handle_event([:oban, :job, :exception], _measurements, metadata, config) do
     %{reason: exception, stacktrace: stacktrace, job: job} = metadata
     state = Map.get(metadata, :state, :failure)
 
@@ -63,6 +63,6 @@ defmodule DiscoLog.Integrations.Oban do
         do: [{String.to_existing_atom("Elixir." <> job.worker), :perform, 2, []}],
         else: stacktrace
 
-    DiscoLog.report(exception, stacktrace, context)
+    DiscoLog.report(exception, stacktrace, context, config)
   end
 end

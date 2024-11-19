@@ -1,31 +1,51 @@
 defmodule DiscoLog.DedupeTest do
-  # This is not async because it tests a singleton (the dedupe GenServer).
-  use DiscoLog.Test.Case, async: false
+  use DiscoLog.Test.Case, async: true
 
   alias DiscoLog.Dedupe
   alias DiscoLog.Error
 
-  describe inspect(&Dedupe.insert/1) do
-    test "works correctly" do
+  setup_all do
+    Registry.start_link(keys: :unique, name: __MODULE__.Registry)
+    :ok
+  end
+
+  setup do
+    pid = start_link_supervised!({Dedupe, supervisor_name: __MODULE__})
+
+    %{pid: pid}
+  end
+
+  describe inspect(&Dedupe.insert/2) do
+    test "first error is new" do
       error = %Error{}
 
-      # First time, it's :new.
-      assert Dedupe.insert(error) == :new
+      assert Dedupe.insert(__MODULE__, error) == :new
+    end
 
-      # Then, it's :existing.
-      assert Dedupe.insert(error) == :existing
-      assert Dedupe.insert(error) == :existing
+    test "then it's existing" do
+      error = %Error{}
+
+      assert Dedupe.insert(__MODULE__, error) == :new
+      assert Dedupe.insert(__MODULE__, error) == :existing
+      assert Dedupe.insert(__MODULE__, error) == :existing
+    end
+  end
+
+  describe "sweep" do
+    test "sweep cleans up table", %{pid: pid} do
+      error = %Error{}
+
+      assert Dedupe.insert(__MODULE__, error) == :new
+      assert Dedupe.insert(__MODULE__, error) == :existing
 
       # Now, we trigger a sweep after waiting for the TTL interval.
       # To ensure the :sweep message is processed, we use the trick
       # of asking the GenServer for its state (which is a sync call).
-      Process.sleep(5)
-      send(Dedupe, {:sweep, 0})
-      _ = :sys.get_state(Dedupe)
+      send(pid, {:sweep, 0})
+      _ = :sys.get_state(pid)
 
       # Now, it's :new again.
-      assert Dedupe.insert(error) == :new
-      assert Dedupe.insert(error) == :existing
+      assert Dedupe.insert(__MODULE__, error) == :new
     end
   end
 end

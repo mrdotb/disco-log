@@ -4,18 +4,17 @@ defmodule DiscoLog.Application do
   use Application
 
   alias DiscoLog.Config
-  alias DiscoLog.Dedupe
   alias DiscoLog.Integrations
   alias DiscoLog.LoggerHandler
-  alias DiscoLog.Storage
 
   def start(_type, _args) do
-    if Config.enabled?() do
-      start_integration()
+    config = Config.read!()
+
+    if config.enable do
+      start_integration(config)
 
       children = [
-        {Storage, []},
-        {Dedupe, []}
+        {DiscoLog.Supervisor, config}
       ]
 
       Supervisor.start_link(children, strategy: :one_for_one, name: __MODULE__)
@@ -24,21 +23,21 @@ defmodule DiscoLog.Application do
     end
   end
 
-  defp start_integration do
-    if Config.logger_enabled?() do
-      :logger.add_handler(:disco_log_handler, LoggerHandler, %{})
+  defp start_integration(config) do
+    if config.enable_logger do
+      :logger.add_handler(__MODULE__, LoggerHandler, %{config: config})
     end
 
-    if Config.instrument_phoenix?() do
-      Integrations.Phoenix.attach()
+    if config.instrument_phoenix do
+      Integrations.Phoenix.attach(config)
     end
 
-    if Config.instrument_oban?() do
-      Integrations.Oban.attach()
+    if config.instrument_oban do
+      Integrations.Oban.attach(config)
     end
 
-    if Config.instrument_tesla?() do
-      Integrations.Tesla.attach()
+    if config.instrument_tesla do
+      Integrations.Tesla.attach(config)
     end
   end
 end

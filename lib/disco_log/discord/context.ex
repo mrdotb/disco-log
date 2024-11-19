@@ -6,22 +6,22 @@ defmodule DiscoLog.Discord.Context do
   alias DiscoLog.Discord
   alias DiscoLog.Encoder
 
-  def fetch_or_create_channel(channels, channel_config, parent_id) do
+  def fetch_or_create_channel(config, channels, channel_config, parent_id) do
     case Enum.find(channels, &find_channel(&1, channel_config)) do
       channel when is_map(channel) ->
         {:ok, channel}
 
       nil ->
-        channel_config
-        |> maybe_add_parent_id(parent_id)
-        |> Discord.Client.create_channel()
+        params = maybe_add_parent_id(channel_config, parent_id)
+
+        Discord.Client.create_channel(config, params)
     end
   end
 
-  def maybe_delete_channel(channels, channel_config) do
+  def maybe_delete_channel(config, channels, channel_config) do
     case Enum.find(channels, &find_channel(&1, channel_config)) do
       channel when is_map(channel) ->
-        Discord.Client.delete_channel(channel["id"])
+        Discord.Client.delete_channel(config, channel["id"])
 
       nil ->
         :ok
@@ -38,35 +38,39 @@ defmodule DiscoLog.Discord.Context do
     Map.put(params, :parent_id, parent_id)
   end
 
-  def create_occurrence_thread(error) do
-    error
-    |> prepare_occurrence_thread_fields()
-    |> Discord.Client.create_form_forum_thread()
+  def create_occurrence_thread(config, error) do
+    fields = prepare_occurrence_thread_fields(config, error)
+
+    Discord.Client.create_form_forum_thread(config, fields)
   end
 
-  def create_occurrence_message(thread_id, error) do
-    error
-    |> prepare_occurrence_message_fields()
-    |> Discord.Client.create_form_message(channel_id: thread_id)
+  def create_occurrence_message(config, thread_id, error) do
+    fields = prepare_occurrence_message_fields(error)
+
+    Discord.Client.create_form_message(config, thread_id, fields)
   end
 
-  def list_occurrence_threads do
-    {:ok, response} = Discord.Client.list_active_threads()
+  def list_occurrence_threads(config, occurrences_channel_id) do
+    {:ok, response} =
+      Discord.Client.list_active_threads(config)
 
     response["threads"]
-    |> Enum.filter(&(&1["parent_id"] == Discord.Config.occurrences_channel_id()))
+    |> Enum.filter(&(&1["parent_id"] == occurrences_channel_id))
     |> Enum.map(&{extract_fingerprint(&1["name"]), &1["id"]})
   end
 
-  defp prepare_occurrence_thread_fields(error) do
+  defp prepare_occurrence_thread_fields(config, error) do
     [
       payload_json:
         Encoder.encode!(
-          %{
-            name: thread_name(error),
-            message: prepare_error_message(error)
-          }
-          |> maybe_put_tag(error.context)
+          maybe_put_tag(
+            config,
+            %{
+              name: thread_name(error),
+              message: prepare_error_message(error)
+            },
+            error.context
+          )
         )
     ]
     |> put_stacktrace(error.stacktrace)
@@ -110,11 +114,11 @@ defmodule DiscoLog.Discord.Context do
 
   # defp backtick_wrap(string), do: "`#{string}`"
 
-  defp maybe_put_tag(message, context) do
+  defp maybe_put_tag(config, message, context) do
     context
     |> Map.keys()
-    |> Enum.filter(&(&1 in Discord.Config.tags()))
-    |> Enum.map(&Discord.Config.occurrences_channel_tag_id(&1))
+    |> Enum.filter(&(&1 in config.tags))
+    |> Enum.map(&Map.fetch!(config.occurrences_channel_tags, &1))
     |> case do
       [] -> message
       tags -> Map.put(message, :applied_tags, tags)
@@ -141,23 +145,27 @@ defmodule DiscoLog.Discord.Context do
     )
   end
 
-  def create_message(channel_id, message, metadata) when is_binary(message) do
-    [
-      payload_json:
-        Encoder.encode!(%{
-          content: message
-        })
-    ]
-    |> maybe_put_metadata(metadata)
-    |> Discord.Client.create_form_message(channel_id: channel_id)
+  def create_message(config, channel_id, message, metadata) when is_binary(message) do
+    fields =
+      [
+        payload_json:
+          Encoder.encode!(%{
+            content: message
+          })
+      ]
+      |> maybe_put_metadata(metadata)
+
+    Discord.Client.create_form_message(config, channel_id, fields)
   end
 
-  def create_message(channel_id, message, metadata) when is_map(message) do
-    [
-      message: {Encoder.encode!(message, pretty: true), filename: "message.json"}
-    ]
-    |> maybe_put_metadata(metadata)
-    |> Discord.Client.create_form_message(channel_id: channel_id)
+  def create_message(config, channel_id, message, metadata) when is_map(message) do
+    fields =
+      [
+        message: {Encoder.encode!(message, pretty: true), filename: "message.json"}
+      ]
+      |> maybe_put_metadata(metadata)
+
+    Discord.Client.create_form_message(config, channel_id, fields)
   end
 
   defp maybe_put_metadata(fields, metadata) when map_size(metadata) == 0, do: fields
@@ -170,19 +178,19 @@ defmodule DiscoLog.Discord.Context do
     )
   end
 
-  def delete_threads(channel_id) do
-    {:ok, response} = Discord.Client.list_active_threads()
+  def delete_threads(config, channel_id) do
+    {:ok, response} = Discord.Client.list_active_threads(config)
 
     response["threads"]
     |> Enum.filter(&(&1["parent_id"] == channel_id))
-    |> Enum.map(&Discord.Client.delete_thread(&1["id"]))
+    |> Enum.map(&Discord.Client.delete_thread(config, &1["id"]))
   end
 
-  def delete_channel_messages(channel_id) do
-    {:ok, response} = Discord.Client.list_messages(channel_id)
+  def delete_channel_messages(config, channel_id) do
+    {:ok, response} = Discord.Client.list_messages(config, channel_id)
 
     response
     |> Enum.map(& &1["id"])
-    |> Enum.map(&Discord.Client.delete_message(channel_id, &1))
+    |> Enum.map(&Discord.Client.delete_message(config, channel_id, &1))
   end
 end

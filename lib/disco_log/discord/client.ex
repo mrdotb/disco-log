@@ -3,17 +3,13 @@ defmodule DiscoLog.Discord.Client do
   This module contains the Discord API client.
   """
 
-  alias DiscoLog.Discord
-
   require Logger
 
   @base_url "https://discord.com/api/v10"
   @version DiscoLog.MixProject.project()[:version]
 
-  def list_channels(opts) do
-    guild_id = Keyword.get(opts, :guild_id, Discord.Config.guild_id())
-
-    case Req.get!(client(), url: "/guilds/#{guild_id}/channels") do
+  def list_channels(config) do
+    case Req.get!(client(config), url: "/guilds/#{config.guild_id}/channels") do
       %Req.Response{status: 200, body: body} ->
         {:ok, body}
 
@@ -22,10 +18,10 @@ defmodule DiscoLog.Discord.Client do
     end
   end
 
-  def create_channel(params) do
+  def create_channel(config, params) do
     case Req.post!(
-           client(),
-           url: "/guilds/#{Discord.Config.guild_id()}/channels",
+           client(config),
+           url: "/guilds/#{config.guild_id}/channels",
            json: params
          ) do
       %Req.Response{status: 201, body: body} ->
@@ -36,8 +32,8 @@ defmodule DiscoLog.Discord.Client do
     end
   end
 
-  def delete_channel(channel_id) do
-    case Req.delete!(client(), url: "/channels/#{channel_id}") do
+  def delete_channel(config, channel_id) do
+    case Req.delete!(client(config), url: "/channels/#{channel_id}") do
       %Req.Response{status: 204} ->
         :ok
 
@@ -46,10 +42,8 @@ defmodule DiscoLog.Discord.Client do
     end
   end
 
-  def list_active_threads(opts \\ []) do
-    guild_id = Keyword.get(opts, :guild_id, Discord.Config.guild_id())
-
-    case Req.get!(client(), url: "/guilds/#{guild_id}/threads/active") do
+  def list_active_threads(config) do
+    case Req.get!(client(config), url: "/guilds/#{config.guild_id}/threads/active") do
       %Req.Response{status: 200, body: body} ->
         {:ok, body}
 
@@ -58,10 +52,11 @@ defmodule DiscoLog.Discord.Client do
     end
   end
 
-  def create_form_forum_thread(fields, opts \\ []) do
-    channel_id = Keyword.get(opts, :channel_id, Discord.Config.occurrences_channel_id())
-
-    case Req.post!(client(), url: "/channels/#{channel_id}/threads", form_multipart: fields) do
+  def create_form_forum_thread(config, fields) do
+    case Req.post!(client(config),
+           url: "/channels/#{config.occurrences_channel_id}/threads",
+           form_multipart: fields
+         ) do
       %Req.Response{status: 201, body: body} ->
         {:ok, body}
 
@@ -70,8 +65,8 @@ defmodule DiscoLog.Discord.Client do
     end
   end
 
-  def delete_thread(thread_id) do
-    case Req.delete!(client(), url: "/channels/#{thread_id}") do
+  def delete_thread(config, thread_id) do
+    case Req.delete!(client(config), url: "/channels/#{thread_id}") do
       %Req.Response{status: 204} ->
         :ok
 
@@ -80,10 +75,11 @@ defmodule DiscoLog.Discord.Client do
     end
   end
 
-  def create_form_message(fields, opts \\ []) do
-    channel_id = Keyword.get(opts, :channel_id, nil)
-
-    case Req.post!(client(), url: "/channels/#{channel_id}/messages", form_multipart: fields) do
+  def create_form_message(config, channel_id, fields) do
+    case Req.post!(client(config),
+           url: "/channels/#{channel_id}/messages",
+           form_multipart: fields
+         ) do
       %Req.Response{status: 200, body: body} ->
         {:ok, body}
 
@@ -92,10 +88,8 @@ defmodule DiscoLog.Discord.Client do
     end
   end
 
-  def create_json_message(params, opts \\ []) do
-    channel_id = Keyword.get(opts, :channel_id, nil)
-
-    case Req.post!(client(), url: "/channels/#{channel_id}/messages", json: params) do
+  def create_json_message(config, channel_id, params) do
+    case Req.post!(client(config), url: "/channels/#{channel_id}/messages", json: params) do
       %Req.Response{status: 200, body: body} ->
         {:ok, body}
 
@@ -104,8 +98,8 @@ defmodule DiscoLog.Discord.Client do
     end
   end
 
-  def list_messages(channel_id, params \\ []) do
-    case Req.get!(client(), url: "/channels/#{channel_id}/messages", params: params) do
+  def list_messages(config, channel_id, params \\ []) do
+    case Req.get!(client(config), url: "/channels/#{channel_id}/messages", params: params) do
       %Req.Response{status: 200, body: body} ->
         {:ok, body}
 
@@ -114,8 +108,8 @@ defmodule DiscoLog.Discord.Client do
     end
   end
 
-  def delete_message(channel_id, message_id) do
-    case Req.delete!(client(),
+  def delete_message(config, channel_id, message_id) do
+    case Req.delete!(client(config),
            url: "/channels/#{channel_id}/messages/#{message_id}",
            max_retries: 10
          ) do
@@ -127,15 +121,15 @@ defmodule DiscoLog.Discord.Client do
     end
   end
 
-  defp client do
+  def client(config) do
     Req.new(
       base_url: @base_url,
       headers: [
         {"User-Agent", "DiscoLog (https://github.com/mrdotb/disco-log, #{@version})"},
-        {"Authorization", "Bot #{Discord.Config.token()}"}
+        {"Authorization", "Bot #{config.token}"}
       ]
     )
-    |> maybe_add_debug_log(Discord.Config.enable_log?())
+    |> maybe_add_debug_log(config.enable_discord_log)
   end
 
   defp maybe_add_debug_log(request, false), do: request

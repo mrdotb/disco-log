@@ -1,38 +1,68 @@
 defmodule DiscoLog.Storage do
   @moduledoc """
-  A GenServer to store the mapping of fingerprint to Discord Thread ID using ETS.
+  A GenServer to store the mapping of fingerprint to Discord Thread ID.
   """
   use GenServer
 
-  alias DiscoLog.Discord
-
-  @ets __MODULE__
+  defstruct [:registry, :discord_config, :discord]
 
   ## Public API
 
   @doc "Start the Storage"
-  def start_link(_opts), do: GenServer.start_link(__MODULE__, [], name: __MODULE__)
+  def start_link(opts) do
+    name =
+      opts
+      |> Keyword.fetch!(:supervisor_name)
+      |> DiscoLog.Registry.via(__MODULE__)
+
+    callers = Process.get(:"$callers", [])
+
+    GenServer.start_link(__MODULE__, {opts, callers}, name: name)
+  end
 
   @doc "Add a new fingerprint -> thread_id mapping"
-  def add_thread_id(fingerprint, thread_id),
-    do: GenServer.call(__MODULE__, {:add_thread_id, fingerprint, thread_id})
+  def add_thread_id(name, fingerprint, thread_id) do
+    GenServer.call(
+      DiscoLog.Registry.via(name, __MODULE__),
+      {:add_thread_id, fingerprint, thread_id}
+    )
+  end
 
   @doc "Retrieve the thread_id for a given fingerprint"
-  def get_thread_id(fingerprint), do: GenServer.call(__MODULE__, {:get_thread_id, fingerprint})
+  def get_thread_id(name, fingerprint) do
+    name
+    |> DiscoLog.Registry.registry_name()
+    |> Registry.lookup(__MODULE__)
+    |> case do
+      [{_, %{^fingerprint => thread_id}}] -> thread_id
+      _ -> nil
+    end
+  end
 
   ## Callbacks
 
   @impl GenServer
-  def init(_args) do
-    :ets.new(@ets, [:named_table, :public, :set])
-    {:ok, [], {:continue, :restore}}
+  def init({opts, callers}) do
+    state = %__MODULE__{
+      registry: DiscoLog.Registry.registry_name(opts[:supervisor_name]),
+      discord_config: Keyword.fetch!(opts, :discord_config),
+      discord: Keyword.fetch!(opts, :discord)
+    }
+
+    Process.put(:"$callers", callers)
+
+    {:ok, state, {:continue, :restore}}
   end
 
   @impl GenServer
-  def handle_continue(:restore, state) do
-    Discord.list_occurrence_threads()
-    |> Enum.each(fn {fingerprint, thread_id} ->
-      :ets.insert(@ets, {fingerprint, thread_id})
+  def handle_continue(
+        :restore,
+        %__MODULE__{discord_config: config, discord: discord, registry: registry} = state
+      ) do
+    Registry.update_value(registry, __MODULE__, fn _ ->
+      config
+      |> discord.list_occurrence_threads(config.occurrences_channel_id)
+      |> Map.new()
     end)
 
     {:noreply, state}
@@ -40,18 +70,10 @@ defmodule DiscoLog.Storage do
 
   @impl GenServer
   def handle_call({:add_thread_id, fingerprint, thread_id}, _from, state) do
-    :ets.insert(@ets, {fingerprint, thread_id})
+    Registry.update_value(state.registry, __MODULE__, fn threads ->
+      Map.put(threads, fingerprint, thread_id)
+    end)
+
     {:reply, :ok, state}
-  end
-
-  @impl GenServer
-  def handle_call({:get_thread_id, fingerprint}, _from, state) do
-    thread_id =
-      case :ets.lookup(@ets, fingerprint) do
-        [{^fingerprint, thread_id}] -> thread_id
-        [] -> nil
-      end
-
-    {:reply, thread_id, state}
   end
 end

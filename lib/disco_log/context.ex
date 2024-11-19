@@ -10,13 +10,13 @@ defmodule DiscoLog.Context do
   end
 
   def set(key, new) when is_map(new) do
-    sentry_metadata =
+    disco_log_metadata =
       case :logger.get_process_metadata() do
         %{@logger_metadata_key => config} -> Map.update(config, key, new, &Map.merge(&1, new))
         _ -> %{key => new}
       end
 
-    :logger.update_process_metadata(%{@logger_metadata_key => sentry_metadata})
+    :logger.update_process_metadata(%{@logger_metadata_key => disco_log_metadata})
   end
 
   @doc """

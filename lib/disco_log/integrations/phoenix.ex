@@ -66,18 +66,18 @@ defmodule DiscoLog.Integrations.Phoenix do
   ]
 
   @doc false
-  def attach do
+  def attach(config) do
     if Application.spec(:phoenix) do
-      :telemetry.attach_many(__MODULE__, @events, &__MODULE__.handle_event/4, :no_config)
+      :telemetry.attach_many(__MODULE__, @events, &__MODULE__.handle_event/4, config)
     end
   end
 
   @doc false
-  def handle_event([:phoenix, :router_dispatch, :start], _measurements, metadata, :no_config) do
+  def handle_event([:phoenix, :router_dispatch, :start], _measurements, metadata, _config) do
     PlugIntegration.set_context(metadata.conn)
   end
 
-  def handle_event([:phoenix, :router_dispatch, :exception], _measurements, metadata, :no_config) do
+  def handle_event([:phoenix, :router_dispatch, :exception], _measurements, metadata, config) do
     {reason, kind, stack} =
       case metadata do
         %{reason: %Plug.Conn.WrapperError{reason: reason, kind: kind, stack: stack}} ->
@@ -87,23 +87,23 @@ defmodule DiscoLog.Integrations.Phoenix do
           {reason, kind, stack}
       end
 
-    PlugIntegration.report_error(metadata.conn, {kind, reason}, stack)
+    PlugIntegration.report_error(metadata.conn, {kind, reason}, stack, config)
   end
 
-  def handle_event([:phoenix, :live_view, :mount, :start], _, metadata, :no_config) do
+  def handle_event([:phoenix, :live_view, :mount, :start], _, metadata, _config) do
     Context.set("live_view", %{
       "view" => metadata.socket.view
     })
   end
 
-  def handle_event([:phoenix, :live_view, :handle_params, :start], _, metadata, :no_config) do
+  def handle_event([:phoenix, :live_view, :handle_params, :start], _, metadata, _config) do
     Context.set("live_view", %{
       "uri" => metadata.uri,
       "params" => metadata.params
     })
   end
 
-  def handle_event([:phoenix, :live_view, :handle_event, :exception], _, metadata, :no_config) do
+  def handle_event([:phoenix, :live_view, :handle_event, :exception], _, metadata, config) do
     context = %{
       "live_view" => %{
         "event" => metadata.event,
@@ -111,28 +111,28 @@ defmodule DiscoLog.Integrations.Phoenix do
       }
     }
 
-    DiscoLog.report({metadata.kind, metadata.reason}, metadata.stacktrace, context)
+    DiscoLog.report({metadata.kind, metadata.reason}, metadata.stacktrace, context, config)
   end
 
-  def handle_event([:phoenix, :live_view, _action, :exception], _, metadata, :no_config) do
-    DiscoLog.report({metadata.kind, metadata.reason}, metadata.stacktrace)
+  def handle_event([:phoenix, :live_view, _action, :exception], _, metadata, config) do
+    DiscoLog.report({metadata.kind, metadata.reason}, metadata.stacktrace, config)
   end
 
-  def handle_event([:phoenix, :live_component, :update, :exception], _, metadata, :no_config) do
+  def handle_event([:phoenix, :live_component, :update, :exception], _, metadata, config) do
     context = %{
       "live_view" => %{
         "component" => metadata.component
       }
     }
 
-    DiscoLog.report({metadata.kind, metadata.reason}, metadata.stacktrace, context)
+    DiscoLog.report({metadata.kind, metadata.reason}, metadata.stacktrace, context, config)
   end
 
   def handle_event(
         [:phoenix, :live_component, :handle_event, :exception],
         _,
         metadata,
-        :no_config
+        config
       ) do
     context = %{
       "live_view" => %{
@@ -142,6 +142,6 @@ defmodule DiscoLog.Integrations.Phoenix do
       }
     }
 
-    DiscoLog.report({metadata.kind, metadata.reason}, metadata.stacktrace, context)
+    DiscoLog.report({metadata.kind, metadata.reason}, metadata.stacktrace, context, config)
   end
 end

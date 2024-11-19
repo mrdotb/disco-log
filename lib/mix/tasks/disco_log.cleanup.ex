@@ -5,22 +5,23 @@ defmodule Mix.Tasks.DiscoLog.Cleanup do
   use Mix.Task
 
   alias DiscoLog.Discord
+  alias DiscoLog.Config
 
   @impl Mix.Task
   def run(_args) do
     # Ensure req is started
     {:ok, _} = Application.ensure_all_started(:req)
+    config = Config.read!().discord_config
 
     # Delete all threads from occurrences channel
-    Discord.Config.occurrences_channel_id()
-    |> Discord.delete_threads()
+    Discord.delete_threads(config, config.occurrences_channel_id)
 
     # Delete all messages from info and error channels
     [
-      Discord.Config.info_channel_id(),
-      Discord.Config.error_channel_id()
+      config.info_channel_id,
+      config.error_channel_id
     ]
-    |> Enum.each(&Discord.delete_channel_messages(&1))
+    |> Enum.each(&Discord.delete_channel_messages(config, &1))
 
     Mix.shell().info("Messages from DiscoLog Discord channels were deleted successfully!")
   end

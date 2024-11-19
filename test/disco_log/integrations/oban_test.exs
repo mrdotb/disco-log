@@ -1,16 +1,29 @@
 defmodule DiscoLog.ObanTest do
-  use DiscoLog.Test.Case, async: false
+  use DiscoLog.Test.Case, async: true
+
+  import Mox
+
+  @moduletag config: [supervisor_name: __MODULE__]
 
   alias DiscoLog.Integrations
+  alias DiscoLog.DiscordMock
 
-  setup :register_before_send
+  setup :setup_supervisor
   setup :attach_oban
+  setup :verify_on_exit!
 
   test "attaches to Oban events" do
     assert event_attached?([:oban, :job, :exception], DiscoLog.Integrations.Oban)
   end
 
-  test "send the exception with the oban context", %{sender_ref: ref} do
+  test "send the exception with the oban context" do
+    pid = self()
+    ref = make_ref()
+
+    expect(DiscordMock, :create_occurrence_thread, fn _config, error ->
+      send(pid, {ref, error})
+    end)
+
     execute_job_exception()
 
     assert_receive {^ref, error}
@@ -62,7 +75,7 @@ defmodule DiscoLog.ObanTest do
   end
 
   defp attach_oban(context) do
-    Integrations.Oban.attach(true)
+    Integrations.Oban.attach(context.config, true)
     context
   end
 end

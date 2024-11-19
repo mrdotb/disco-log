@@ -5,21 +5,24 @@ defmodule Mix.Tasks.DiscoLog.Drop do
   use Mix.Task
 
   alias DiscoLog.Discord
+  alias DiscoLog.Config
 
   @impl Mix.Task
   def run(_args) do
     # Ensure req is started
     {:ok, _} = Application.ensure_all_started(:req)
 
-    {:ok, channels} = Discord.list_channels()
+    config = Config.read!().discord_config
+
+    {:ok, channels} = Discord.list_channels(config.config)
 
     [
-      Discord.Config.category(),
-      Discord.Config.occurrences_channel(),
-      Discord.Config.info_channel(),
-      Discord.Config.error_channel()
+      config.category,
+      config.occurrences_channel,
+      config.info_channel,
+      config.error_channel
     ]
-    |> Enum.each(&Discord.maybe_delete_channel(channels, &1))
+    |> Enum.each(&Discord.maybe_delete_channel(config, channels, &1))
 
     Mix.shell().info("Discord channels for DiscoLog were deleted successfully!")
   end

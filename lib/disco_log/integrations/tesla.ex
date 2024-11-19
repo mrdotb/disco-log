@@ -24,19 +24,19 @@ defmodule DiscoLog.Integrations.Tesla do
   ]
 
   @doc false
-  def attach(force_attachment \\ false) do
+  def attach(config, force_attachment \\ false) do
     if Application.spec(:tesla) || force_attachment do
-      :telemetry.attach_many(__MODULE__, @events, &__MODULE__.handle_event/4, :no_config)
+      :telemetry.attach_many(__MODULE__, @events, &__MODULE__.handle_event/4, config)
     end
   end
 
-  def handle_event([:tesla, :request, :exception], _measurements, metadata, :no_config) do
+  def handle_event([:tesla, :request, :exception], _measurements, metadata, config) do
     %{kind: kind, reason: reason, stacktrace: stacktrace, env: env} = metadata
 
     context = %{
       "tesla" => Map.from_struct(env)
     }
 
-    DiscoLog.report({kind, reason}, stacktrace, context)
+    DiscoLog.report({kind, reason}, stacktrace, context, config)
   end
 end
