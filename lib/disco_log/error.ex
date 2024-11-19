@@ -18,10 +18,10 @@ defmodule DiscoLog.Error do
 
   defstruct ~w(kind reason source_line source_function context stacktrace fingerprint)a
 
-  def new(exception, stacktrace, context) do
+  def new(exception, stacktrace, context, client_app) do
     {kind, reason} = normalize_exception(exception, stacktrace)
     stacktrace = Stacktrace.new(stacktrace)
-    source = Stacktrace.source(stacktrace)
+    source = Stacktrace.source(stacktrace, client_app)
 
     source_line =
       if is_map(source) and not is_nil(source.file) and source.file != "",

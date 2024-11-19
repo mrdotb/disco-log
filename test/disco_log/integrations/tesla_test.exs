@@ -1,16 +1,29 @@
 defmodule DiscoLog.TeslaTest do
-  use DiscoLog.Test.Case, async: false
+  use DiscoLog.Test.Case, async: true
+
+  import Mox
+
+  @moduletag config: [supervisor_name: __MODULE__]
 
   alias DiscoLog.Integrations
+  alias DiscoLog.DiscordMock
 
-  setup :register_before_send
+  setup :setup_supervisor
   setup :attach_tesla
+  setup :verify_on_exit!
 
   test "attaches to Tesla events" do
     assert event_attached?([:tesla, :request, :exception], DiscoLog.Integrations.Tesla)
   end
 
-  test "send the exception with the tesla context", %{sender_ref: ref} do
+  test "send the exception with the tesla context" do
+    pid = self()
+    ref = make_ref()
+
+    expect(DiscordMock, :create_occurrence_thread, fn _config, error ->
+      send(pid, {ref, error})
+    end)
+
     execute_tesla_exception()
 
     assert_receive {^ref, error}
@@ -43,7 +56,7 @@ defmodule DiscoLog.TeslaTest do
   end
 
   defp attach_tesla(context) do
-    Integrations.Tesla.attach(true)
+    Integrations.Tesla.attach(context.config, true)
     context
   end
 end

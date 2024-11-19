@@ -1,6 +1,7 @@
 import Config
 
 config :disco_log,
+  enable: false,
   otp_app: :disco_log,
   token: "",
   guild_id: "",
@@ -13,7 +14,8 @@ config :disco_log,
     "oban" => ""
   },
   info_channel_id: "",
-  error_channel_id: ""
+  error_channel_id: "",
+  discord: DiscoLog.DiscordMock
 
 config :logger,
   backends: [],
@@ -24,7 +26,3 @@ config :logger,
     # [module: DiscoLog.Discord.Client, level_lower_than: :info]
   ],
   truncate: :infinity
-
-# Mocks module
-config :disco_log,
-  discord: DiscoLog.DiscordMock

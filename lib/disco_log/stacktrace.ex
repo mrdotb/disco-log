@@ -53,9 +53,7 @@ defmodule DiscoLog.Stacktrace do
   The first line matching the client application. If no line belongs to the current
   application, just the first line.
   """
-  def source(%Stacktrace{} = stack) do
-    client_app = Application.fetch_env!(:disco_log, :otp_app)
-
+  def source(%Stacktrace{} = stack, client_app) do
     Enum.find(stack.lines, &(&1.application == client_app)) || List.first(stack.lines)
   end
 end

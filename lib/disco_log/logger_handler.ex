@@ -5,45 +5,35 @@ defmodule DiscoLog.LoggerHandler do
   Original source: https://github.com/getsentry/sentry-elixir/blob/69ac8d0e3f33ff36ab1092bbd346fdb99cf9d061/lib/sentry/logger_handler.ex
   """
 
-  alias __MODULE__
   alias DiscoLog.Client
   alias DiscoLog.Config
   alias DiscoLog.Context
   alias DiscoLog.Error
 
-  defstruct excluded_domains: [:cowboy, :bandit],
-            metadata: []
-
   ## Logger handler callbacks
 
   @spec adding_handler(:logger.handler_config()) :: {:ok, :logger.handler_config()}
-  def adding_handler(config) do
-    config = Map.put(config, :config, configure(%LoggerHandler{}, Config.logger_config()))
-    {:ok, config}
+  def adding_handler(handler_config) do
+    with {:ok, config} <- Config.validate(handler_config.config) do
+      {:ok, Map.put(handler_config, :config, config)}
+    end
   end
 
-  @spec changing_config(:update, :logger.handler_config(), :logger.handler_config()) ::
+  @spec changing_config(:set | :update, :logger.handler_config(), :logger.handler_config()) ::
           {:ok, :logger.handler_config()}
-  def changing_config(:update, old_config, _new_config) do
-    new_config = Map.put(old_config, :config, configure(%LoggerHandler{}, Config.logger_config()))
-    {:ok, new_config}
+  def changing_config(:set, _old_config, new_config) do
+    adding_handler(new_config)
   end
 
-  defp configure(%LoggerHandler{} = existing_config, config) do
-    metadata = Keyword.get(config, :metadata, [])
-
-    %{
-      existing_config
-      | metadata: metadata
-    }
-  end
-
-  def removing_handler(_) do
-    :ok
+  def changing_config(:update, old_config, new_config) do
+    old_config
+    |> Map.merge(new_config)
+    |> Map.put(:config, Map.merge(old_config.config, new_config.config))
+    |> adding_handler()
   end
 
   def log(%{level: log_level, meta: log_meta} = log_event, %{
-        config: %LoggerHandler{} = config
+        config: config
       }) do
     cond do
       excluded_level?(log_level) ->
@@ -74,21 +64,21 @@ defmodule DiscoLog.LoggerHandler do
   # "string" logged
   defp log_info(
          %{msg: {:string, unicode_chardata}, meta: meta},
-         %LoggerHandler{} = config
+         config
        ) do
     metadata = take_metadata(meta, config.metadata)
     message = IO.iodata_to_binary(unicode_chardata)
-    Client.log_info(message, metadata)
+    Client.log_info(message, metadata, config)
     :ok
   end
 
   # "report" here is of type logger:report/0, which is a struct, map or keyword list.
   defp log_info(
          %{msg: {:report, report}, meta: meta},
-         %LoggerHandler{} = config
+         config
        ) do
     metadata = take_metadata(meta, config.metadata)
-    log_info_report(report, metadata)
+    log_info_report(report, metadata, config)
     :ok
   end
 
@@ -96,15 +86,15 @@ defmodule DiscoLog.LoggerHandler do
   # read more on: https://www.erlang.org/doc/apps/kernel/logger_chapter.html#log-message
   defp log_info(
          %{msg: {format, format_args}, meta: meta},
-         %LoggerHandler{} = config
+         config
        ) do
     metadata = take_metadata(meta, config.metadata)
     string_message = format |> :io_lib.format(format_args) |> IO.chardata_to_string()
-    Client.log_info(string_message, metadata)
+    Client.log_info(string_message, metadata, config)
     :ok
   end
 
-  defp log_info(_log_event, %LoggerHandler{} = _config) do
+  defp log_info(_log_event, _config) do
     :ok
   end
 
@@ -112,19 +102,19 @@ defmodule DiscoLog.LoggerHandler do
   # report from there, otherwise we use the logged string directly.
   defp log_error(
          %{msg: {:string, unicode_chardata}, meta: meta} = log_event,
-         %LoggerHandler{} = config
+         config
        ) do
     metadata = take_metadata(log_event.meta, config.metadata)
-    log_from_crash_reason(meta[:crash_reason], unicode_chardata, metadata)
+    log_from_crash_reason(meta[:crash_reason], unicode_chardata, metadata, config)
   end
 
   # "report" here is of type logger:report/0, which is a struct, map or keyword list.
   defp log_error(
          %{msg: {:report, report}, meta: meta},
-         %LoggerHandler{} = config
+         config
        ) do
     metadata = take_metadata(meta, config.metadata)
-    log_error_report(report, metadata)
+    log_error_report(report, metadata, config)
     :ok
   end
 
@@ -132,34 +122,36 @@ defmodule DiscoLog.LoggerHandler do
   # read more on: https://www.erlang.org/doc/apps/kernel/logger_chapter.html#log-message
   defp log_error(
          %{msg: {format, format_args}, meta: meta},
-         %LoggerHandler{} = config
+         config
        ) do
     metadata = take_metadata(meta, config.metadata)
     string_message = format |> :io_lib.format(format_args) |> IO.chardata_to_string()
-    Client.log_error(string_message, metadata)
+    Client.log_error(string_message, metadata, config)
     :ok
   end
 
-  defp log_error(_log_event, %LoggerHandler{} = _config) do
+  defp log_error(_log_event, _config) do
     :ok
   end
 
   defp log_from_crash_reason(
          {exception, stacktrace},
          _chardata_message,
-         metadata
+         metadata,
+         config
        )
        when is_exception(exception) and is_list(stacktrace) do
     context = Map.put(Context.get(), :metadata, metadata)
-    error = Error.new(exception, stacktrace, context)
-    Client.send_error(error)
+    error = Error.new(exception, stacktrace, context, config.otp_app)
+    Client.send_error(error, config)
     :ok
   end
 
   defp log_from_crash_reason(
          {reason, stacktrace},
          chardata_message,
-         metadata
+         metadata,
+         config
        )
        when is_list(stacktrace) do
     context =
@@ -173,15 +165,15 @@ defmodule DiscoLog.LoggerHandler do
       when type in [:noproc, :timeout] ->
         reason = Exception.format_exit(reason)
         context = Map.put(context, :extra_reason, reason)
-        error = Error.new({"genserver_call", type}, stacktrace, context)
-        Client.send_error(error)
+        error = Error.new({"genserver_call", type}, stacktrace, context, config.otp_app)
+        Client.send_error(error, config)
 
       _other ->
         context =
           Map.put(context, :extra_info_from_genserver, try_to_parse_message(chardata_message))
 
-        error = Error.new(reason, stacktrace, context)
-        Client.send_error(error)
+        error = Error.new(reason, stacktrace, context, config.otp_app)
+        Client.send_error(error, config)
     end
 
     :ok
@@ -190,10 +182,11 @@ defmodule DiscoLog.LoggerHandler do
   defp log_from_crash_reason(
          _other_reason,
          chardata_message,
-         metadata
+         metadata,
+         config
        ) do
     message = IO.iodata_to_binary(chardata_message)
-    Client.log_error(message, metadata)
+    Client.log_error(message, metadata, config)
     :ok
   end
 
@@ -324,43 +317,43 @@ defmodule DiscoLog.LoggerHandler do
     end)
   end
 
-  defp log_info_report(report, metadata) when is_struct(report) do
+  defp log_info_report(report, metadata, config) when is_struct(report) do
     report
     |> Map.from_struct()
     |> Map.put(:__struct__, to_string(report.__struct__))
-    |> Client.log_info(metadata)
+    |> Client.log_info(metadata, config)
   end
 
-  defp log_info_report(report, metadata) do
+  defp log_info_report(report, metadata, config) do
     report
     |> Map.new()
-    |> Client.log_info(metadata)
+    |> Client.log_info(metadata, config)
   end
 
-  defp log_error_report(report, metadata) when is_struct(report) do
+  defp log_error_report(report, metadata, config) when is_struct(report) do
     report
     |> Map.from_struct()
     |> Map.put(:__struct__, to_string(report.__struct__))
-    |> Client.log_error(metadata)
+    |> Client.log_error(metadata, config)
   end
 
-  defp log_error_report(report, metadata) do
+  defp log_error_report(report, metadata, config) do
     case Map.new(report) do
       %{reason: {exception, stacktrace}} when is_exception(exception) and is_list(stacktrace) ->
         context = Map.put(Context.get(), :metadata, metadata)
-        error = Error.new(exception, stacktrace, context)
-        Client.send_error(error)
+        error = Error.new(exception, stacktrace, context, config.otp_app)
+        Client.send_error(error, config)
 
       %{reason: {reason, stacktrace}} when is_list(stacktrace) ->
         context = Map.put(Context.get(), :metadata, metadata)
-        error = Error.new(reason, stacktrace, context)
-        Client.send_error(error)
+        error = Error.new(reason, stacktrace, context, config.otp_app)
+        Client.send_error(error, config)
 
       %{reason: reason} ->
-        Client.log_error(reason, metadata)
+        Client.log_error(reason, metadata, config)
 
       _ ->
-        Client.log_error(report, metadata)
+        Client.log_error(report, metadata, config)
     end
   end
 end

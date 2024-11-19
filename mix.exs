@@ -21,7 +21,8 @@ defmodule DiscoLog.MixProject do
         formatters: ["html"],
         extra_section: "GUIDES",
         extras: [
-          "guides/getting-started.md"
+          "guides/getting-started.md",
+          "guides/advanced-configuration.md"
         ],
         api_reference: false,
         main: "getting-started"
@@ -59,13 +60,15 @@ defmodule DiscoLog.MixProject do
       {:jason, "~> 1.1"},
       {:plug, "~> 1.10"},
       {:req, "~> 0.5.6"},
+      {:nimble_options, "~> 1.1"},
       # Dev & test dependencies
       {:git_ops, "~> 2.6.1", only: [:dev]},
       {:credo, "~> 1.7", only: [:dev, :test]},
       {:ex_doc, "~> 0.33", only: :dev},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:phoenix_live_view, "~> 0.19 or ~> 1.0", only: [:dev]},
-      {:plug_cowboy, "~> 2.0", only: :dev}
+      {:plug_cowboy, "~> 2.0", only: :dev},
+      {:mox, "~> 1.1", only: :test}
     ]
   end
 

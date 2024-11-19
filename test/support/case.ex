@@ -15,10 +15,10 @@ defmodule DiscoLog.Test.Case do
     fun.()
   rescue
     exception ->
-      DiscoLog.Error.new(exception, __STACKTRACE__, %{})
+      DiscoLog.Error.new(exception, __STACKTRACE__, %{}, :app_name)
   catch
     kind, reason ->
-      DiscoLog.Error.new({kind, reason}, __STACKTRACE__, %{})
+      DiscoLog.Error.new({kind, reason}, __STACKTRACE__, %{}, :app_name)
   end
 
   @doc """
@@ -49,19 +49,65 @@ defmodule DiscoLog.Test.Case do
   end
 
   @doc """
-  Setup a register before send function for testing purposes.
+  Starts DiscoLog supervisor under test supervision tree and makes sure DiscoLog.Storage async init completes successfully with a stubbed response.
   """
-  def register_before_send(context) do
-    pid = self()
-    ref = make_ref()
+  def setup_supervisor(context) do
+    config =
+      [
+        otp_app: :foo,
+        token: "mytoken",
+        guild_id: "guild_id",
+        category_id: "category_id",
+        occurrences_channel_id: "occurences_channel_id",
+        occurrences_channel_tags: %{},
+        info_channel_id: "info_channel_id",
+        error_channel_id: "error_channel_id",
+        discord: DiscoLog.DiscordMock
+      ]
+      |> Keyword.merge(Map.fetch!(context, :config))
+      |> DiscoLog.Config.validate!()
 
-    Application.put_env(:disco_log, :before_send, fn
-      error ->
-        send(pid, {ref, error})
-        # prevent the discord log to be send by return false
-        false
-    end)
+    Mox.stub(DiscoLog.DiscordMock, :list_occurrence_threads, fn _, _ -> [] end)
 
-    Map.put(context, :sender_ref, ref)
+    {:ok, _pid} = start_supervised({DiscoLog.Supervisor, config})
+
+    # Wait until async init is completed
+    [{storage_pid, _}] =
+      Registry.lookup(DiscoLog.Registry.registry_name(config.supervisor_name), DiscoLog.Storage)
+
+    :sys.get_status(storage_pid)
+
+    %{config: config}
+  end
+
+  @doc """
+  Attaches a dedicated logger handler for a test which will skip all events that don't originate in the test.
+  """
+  def attach_logger_handler(%{config: config, test: test}) do
+    :logger.add_handler(test, DiscoLog.LoggerHandler, %{
+      config: config,
+      filters: [
+        filter_only_self:
+          {fn event, test_pid ->
+             # Some test spawn new processes that the handler will be invoked, so `self()` is not necessarily the same as `test_pid`.
+             # To identify if this is the case we piggyback on Mox ownership mechanism, assuming that if test spawned a process,
+             # it also allowed the process to call DiscordMock either explicitely or through $callers
+             callers = Process.get(:"$callers") || []
+
+             {:ok, owner_pid} =
+               NimbleOwnership.fetch_owner(
+                 {:global, Mox.Server},
+                 [self() | callers],
+                 DiscoLog.DiscordMock
+               )
+
+             if owner_pid == test_pid, do: event, else: :stop
+           end, self()}
+      ]
+    })
+
+    on_exit(fn -> :logger.remove_handler(test) end)
+
+    :ok
   end
 end
