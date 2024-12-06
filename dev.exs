@@ -56,6 +56,7 @@ defmodule DemoWeb.PageController do
     <div><a href="/new_user">Generate a new user log</a></div>
     <div><a href="/user_upgrade">Generate a pay plan log</a></div>
     <div><a href="/extra">Generate a log with attachments</a></div>
+    <div><a href="/long_extra">Generate a log with long attachment</a></div>
 
     <h3>Should not generate errors</h3>
     <div><a href="/404">404 Not found</a></div>
@@ -122,6 +123,19 @@ defmodule DemoWeb.LogController do
         and: "more",
         stuff: "here"
       }
+    )
+
+    conn
+    |> redirect(to: "/")
+  end
+
+  def call(conn, :long_extra) do
+    Logger.info(
+      """
+      ✨ Extra Long Log !
+      📎 With `conn` as attachment
+      """,
+      extra: conn
     )
 
     conn
@@ -227,6 +241,7 @@ defmodule DemoWeb.Router do
     get("/new_user", DemoWeb.LogController, :new_user)
     get("/user_upgrade", DemoWeb.LogController, :user_upgrade)
     get("/extra", DemoWeb.LogController, :extra)
+    get("/long_extra", DemoWeb.LogController, :long_extra)
 
     live("/liveview/mount_error", DemoWeb.MountErrorLive, :index)
     live("/liveview/multi_error/raise", DemoWeb.MultiErrorLive, :raise)
