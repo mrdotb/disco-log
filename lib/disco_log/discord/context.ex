@@ -174,7 +174,7 @@ defmodule DiscoLog.Discord.Context do
     Keyword.put(
       fields,
       :metadata,
-      {inspect(metadata, pretty: true), filename: "metadata.ex"}
+      {serialize_metadata(metadata), filename: "metadata.ex"}
     )
   end
 
@@ -192,5 +192,12 @@ defmodule DiscoLog.Discord.Context do
     response
     |> Enum.map(& &1["id"])
     |> Enum.map(&Discord.Client.delete_message(config, channel_id, &1))
+  end
+
+  defp serialize_metadata(metadata) do
+    metadata
+    |> inspect(pretty: true, limit: :infinity, printable_limit: :infinity)
+    # 8MB is the max file attachment limit
+    |> String.byte_slice(0, 8_000_000)
   end
 end
