@@ -174,7 +174,7 @@ defmodule DiscoLog.Discord.Context do
     Keyword.put(
       fields,
       :metadata,
-      {inspect(metadata, pretty: true), filename: "metadata.ex"}
+      {inspect(metadata, pretty: true, limit: :infinity), filename: "metadata.ex"}
     )
   end
 
