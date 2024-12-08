@@ -111,15 +111,18 @@ defmodule DemoWeb.LogController do
   end
 
   def call(conn, :extra) do
-    Logger.info("""
-    ✨ Extra Log !
-    📎 With attachments
-    """, extra: %{
-      username: "Bob",
-      id: 1,
-      and: "more",
-      stuff: "here"
-    })
+    Logger.info(
+      """
+      ✨ Extra Log !
+      📎 With attachments
+      """,
+      extra: %{
+        username: "Bob",
+        id: 1,
+        and: "more",
+        stuff: "here"
+      }
+    )
 
     conn
     |> redirect(to: "/")
@@ -156,7 +159,7 @@ defmodule DemoWeb.MultiErrorLive do
   end
 
   defp apply_action(_socket, :throw, _params) do
-    throw "Error throwed in a live view"
+    throw("Error throwed in a live view")
   end
 
   def render(assigns) do
@@ -210,25 +213,25 @@ defmodule DemoWeb.Router do
   import Phoenix.LiveView.Router
 
   pipeline :browser do
-    plug :fetch_session
-    plug :protect_from_forgery
+    plug(:fetch_session)
+    plug(:protect_from_forgery)
   end
 
   scope "/" do
-    pipe_through :browser
-    get "/", DemoWeb.PageController, :index
-    get "/noroute", DemoWeb.PageController, :noroute
-    get "/exception", DemoWeb.PageController, :exception
-    get "/exit", DemoWeb.PageController, :exit
+    pipe_through(:browser)
+    get("/", DemoWeb.PageController, :index)
+    get("/noroute", DemoWeb.PageController, :noroute)
+    get("/exception", DemoWeb.PageController, :exception)
+    get("/exit", DemoWeb.PageController, :exit)
 
-    get "/new_user", DemoWeb.LogController, :new_user
-    get "/user_upgrade", DemoWeb.LogController, :user_upgrade
-    get "/extra", DemoWeb.LogController, :extra
+    get("/new_user", DemoWeb.LogController, :new_user)
+    get("/user_upgrade", DemoWeb.LogController, :user_upgrade)
+    get("/extra", DemoWeb.LogController, :extra)
 
-    live "/liveview/mount_error", DemoWeb.MountErrorLive, :index
-    live "/liveview/multi_error/raise", DemoWeb.MultiErrorLive, :raise
-    live "/liveview/multi_error/throw", DemoWeb.MultiErrorLive, :throw
-    live "/liveview/component", DemoWeb.ComponentErrorLive, :update_raise
+    live("/liveview/mount_error", DemoWeb.MountErrorLive, :index)
+    live("/liveview/multi_error/raise", DemoWeb.MultiErrorLive, :raise)
+    live("/liveview/multi_error/throw", DemoWeb.MultiErrorLive, :throw)
+    live("/liveview/component", DemoWeb.ComponentErrorLive, :update_raise)
   end
 end
 
@@ -243,18 +246,18 @@ defmodule DemoWeb.Endpoint do
     same_site: "Lax"
   ]
 
-  socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
-  socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
+  socket("/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]])
+  socket("/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket)
 
-  plug Phoenix.LiveReloader
-  plug Phoenix.CodeReloader
+  plug(Phoenix.LiveReloader)
+  plug(Phoenix.CodeReloader)
 
-  plug Plug.Session, @session_options
+  plug(Plug.Session, @session_options)
 
-  plug Plug.RequestId
-  plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
-  plug :maybe_exception
-  plug DemoWeb.Router
+  plug(Plug.RequestId)
+  plug(Plug.Telemetry, event_prefix: [:phoenix, :endpoint])
+  plug(:maybe_exception)
+  plug(DemoWeb.Router)
 
   def maybe_exception(%Plug.Conn{path_info: ["plug-exception"]}, _), do: raise("Plug exception")
   def maybe_exception(conn, _), do: conn
