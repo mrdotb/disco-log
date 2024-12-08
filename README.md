@@ -8,6 +8,8 @@
 
 [video demo](https://youtu.be/886RByFPI3s)
 
+[<img src="https://discord.com/api/guilds/1277902091481907273/widget.png?style=banner1" alt="Disco Log"/>](https://discord.gg/ReqNqU7Nde)
+
 <img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/demo.png" alt="Demo" />
 
 ## Configuration
