@@ -5,6 +5,19 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v0.7.0](https://github.com/mrdotb/disco-log/compare/v0.6.0...v0.7.0) (2024-12-09)
+
+
+
+
+### Features:
+
+* Supervisor: override child_spec/1 to automatically use supervisor name as id
+
+### Bug Fixes:
+
+* only limit the final length of inspected metadata
+
 ## [v0.6.0](https://github.com/mrdotb/disco-log/compare/v0.5.2...v0.6.0) (2024-11-13)
 
 
