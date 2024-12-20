@@ -353,12 +353,12 @@ defmodule DiscoLog.LoggerHandlerTest do
       end)
 
       run_and_catch_exit(test_genserver, fn ->
-        invalid_function()
+        raise "Hello World"
       end)
 
       assert_receive {^ref, error}
-      assert error.kind == to_string(FunctionClauseError)
-      assert error.reason == "no function clause matching in NaiveDateTime.from_erl/3"
+      assert error.kind == to_string(RuntimeError)
+      assert error.reason == "Hello World"
     end
 
     test "GenServer timeout is reported", %{test_genserver: test_genserver} do
@@ -388,9 +388,5 @@ defmodule DiscoLog.LoggerHandlerTest do
 
   defp run_and_catch_exit(test_genserver_pid, fun) do
     catch_exit(DiscoLog.TestGenServer.run(test_genserver_pid, fun))
-  end
-
-  defp invalid_function do
-    NaiveDateTime.from_erl({}, {}, {})
   end
 end
