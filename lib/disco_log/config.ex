@@ -57,6 +57,11 @@ defmodule DiscoLog.Config do
       default: false,
       doc: "Logs requests to Discord API?"
     ],
+    enable_presence: [
+      type: :boolean,
+      default: false,
+      doc: "Show DiscoLog bot status as Online?"
+    ],
     instrument_oban: [
       type: :boolean,
       default: true,
@@ -147,7 +152,8 @@ defmodule DiscoLog.Config do
   end
 
   def validate(raw_options) do
-    with {:ok, validated} <- NimbleOptions.validate(raw_options, @compiled_schema) do
+    with {:ok, validated} <- NimbleOptions.validate(raw_options, @compiled_schema),
+         {:ok, validated} <- validate_optional_dependencies(validated) do
       config =
         validated
         |> Map.new()
@@ -156,6 +162,23 @@ defmodule DiscoLog.Config do
         end)
 
       {:ok, config}
+    end
+  end
+
+  if Code.ensure_loaded?(Mint.WebSocket) do
+    defp validate_optional_dependencies(validated), do: {:ok, validated}
+  else
+    defp validate_optional_dependencies(validated) do
+      if value = validated[:enable_presence] do
+        {:error,
+         %NimbleOptions.ValidationError{
+           message: "optional mint_web_socket dependency is missing",
+           key: :enable_presence,
+           value: value
+         }}
+      else
+        {:ok, validated}
+      end
     end
   end
 end

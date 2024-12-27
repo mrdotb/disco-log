@@ -7,6 +7,7 @@ defmodule DiscoLog.Supervisor do
 
   alias DiscoLog.Storage
   alias DiscoLog.Dedupe
+  alias DiscoLog.Presence
 
   def child_spec(config) do
     Supervisor.child_spec(
@@ -27,17 +28,31 @@ defmodule DiscoLog.Supervisor do
 
   @impl Supervisor
   def init({config, callers}) do
-    children = [
-      {Registry, keys: :unique, name: DiscoLog.Registry.registry_name(config.supervisor_name)},
-      {Storage,
-       supervisor_name: config.supervisor_name,
-       discord_config: config.discord_config,
-       discord: config.discord},
-      {Dedupe, supervisor_name: config.supervisor_name}
-    ]
+    children =
+      [
+        {Registry, keys: :unique, name: DiscoLog.Registry.registry_name(config.supervisor_name)},
+        {Storage,
+         supervisor_name: config.supervisor_name,
+         discord_config: config.discord_config,
+         discord: config.discord},
+        {Dedupe, supervisor_name: config.supervisor_name}
+      ] ++ maybe_presence(config)
 
     Process.put(:"$callers", callers)
 
     Supervisor.init(children, strategy: :one_for_one)
+  end
+
+  def maybe_presence(config) do
+    if config[:enable_presence] do
+      [
+        {Presence,
+         supervisor_name: config.supervisor_name,
+         discord_config: config.discord_config,
+         discord: config.discord}
+      ]
+    else
+      []
+    end
   end
 end

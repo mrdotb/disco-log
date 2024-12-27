@@ -108,4 +108,24 @@ config :disco_log,
   enable: false
 ```
 
+## Presence
+
+Optionally, DiscoLog can set your bot status to Online. To do this, add `mint_web_socket` package to your dependencies:
+
+```elixir
+defp deps do
+  [
+    {:disco_log, "~> 0.7.0"},
+    {:mint_web_socket, "~> 1.0"}
+  ]
+end
+```
+
+and enable presence flag in the config:
+
+```elixir
+config :disco_log,
+  enable_presence: true
+```
+
 Enjoy using DiscoLog!
