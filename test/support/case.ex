@@ -62,7 +62,8 @@ defmodule DiscoLog.Test.Case do
         occurrences_channel_tags: %{},
         info_channel_id: "info_channel_id",
         error_channel_id: "error_channel_id",
-        discord: DiscoLog.DiscordMock
+        discord: DiscoLog.DiscordMock,
+        enable_presence: false
       ]
       |> Keyword.merge(Map.fetch!(context, :config))
       |> DiscoLog.Config.validate!()

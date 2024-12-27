@@ -59,6 +59,14 @@ defmodule DiscoLog.Discord.Context do
     |> Enum.map(&{extract_fingerprint(&1["name"]), &1["id"]})
   end
 
+  def get_gateway(config) do
+    case Discord.Client.get_gateway(config) do
+      {:ok, %{"url" => gateway_url}} -> {:ok, gateway_url}
+      {:ok, _} -> {:error, "Unexpected response"}
+      other -> other
+    end
+  end
+
   defp prepare_occurrence_thread_fields(config, error) do
     [
       payload_json:

@@ -1,4 +1,5 @@
 defmodule DiscoLog.ApplicationTest do
+  alias DiscoLog.WebsocketClient
   # We test through global handler here which other test may interfere with
   use DiscoLog.Test.Case, async: false
 
@@ -7,7 +8,11 @@ defmodule DiscoLog.ApplicationTest do
   setup_all :set_mox_global
 
   setup_all do
-    Mox.stub(DiscoLog.DiscordMock, :list_occurrence_threads, fn _, _ -> [] end)
+    DiscoLog.DiscordMock
+    |> Mox.stub(:list_occurrence_threads, fn _, _ -> [] end)
+    |> Mox.stub(:get_gateway, fn _ -> {:ok, "wss://example.com"} end)
+
+    Mox.stub(DiscoLog.WebsocketClient.Mock, :connect, fn _, _, _ -> {:ok, %WebsocketClient{}} end)
 
     Application.put_env(:disco_log, :enable, true)
     Application.stop(:disco_log)
@@ -26,12 +31,13 @@ defmodule DiscoLog.ApplicationTest do
              Supervisor.which_children(Process.whereis(DiscoLog.Application))
 
     assert [
+             {DiscoLog.Presence, presence_pid, :worker, _},
              {DiscoLog.Dedupe, dedupe_pid, :worker, _},
              {DiscoLog.Storage, storage_pid, :worker, _},
              {DiscoLog.Registry, registry_pid, :supervisor, _}
            ] = Supervisor.which_children(pid)
 
-    for pid <- [dedupe_pid, storage_pid, registry_pid] do
+    for pid <- [dedupe_pid, storage_pid, registry_pid, presence_pid] do
       assert :sys.get_status(pid)
     end
   end

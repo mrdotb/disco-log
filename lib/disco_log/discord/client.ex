@@ -121,6 +121,16 @@ defmodule DiscoLog.Discord.Client do
     end
   end
 
+  def get_gateway(config) do
+    case Req.get!(client(config), url: "/gateway/bot") do
+      %Req.Response{status: 200, body: body} ->
+        {:ok, body}
+
+      _ ->
+        {:error, "Failed to get gateway"}
+    end
+  end
+
   def client(config) do
     Req.new(
       base_url: @base_url,

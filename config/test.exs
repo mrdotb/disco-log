@@ -15,7 +15,9 @@ config :disco_log,
   },
   info_channel_id: "",
   error_channel_id: "",
-  discord: DiscoLog.DiscordMock
+  discord: DiscoLog.DiscordMock,
+  websocket_adapter: DiscoLog.WebsocketClient.Mock,
+  enable_presence: true
 
 config :logger,
   backends: [],

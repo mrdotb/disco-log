@@ -51,7 +51,7 @@ defmodule DiscoLog.MixProject do
 
   defp description, do: "Use Discord as a logging service and error tracking solution"
 
-  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(:test), do: ["test/support", "lib"]
   defp elixirc_paths(_env), do: ["lib"]
 
   # Run "mix help deps" to learn about dependencies.
@@ -61,6 +61,7 @@ defmodule DiscoLog.MixProject do
       {:plug, "~> 1.10"},
       {:req, "~> 0.5.6"},
       {:nimble_options, "~> 1.1"},
+      {:mint_web_socket, "~> 1.0", optional: true},
       # Dev & test dependencies
       {:git_ops, "~> 2.6.1", only: [:dev]},
       {:credo, "~> 1.7", only: [:dev, :test]},
