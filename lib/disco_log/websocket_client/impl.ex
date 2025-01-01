@@ -34,12 +34,16 @@ if Code.ensure_loaded?(Mint.WebSocket) do
 
     defp handle_tcp_message(%WebsocketClient{conn: conn, ref: ref} = client, [
            {:status, ref, 101},
-           {:headers, ref, headers},
-           {:data, ref, _data} = data_frame,
-           {:done, ref}
+           {:headers, ref, headers} | frames
          ]) do
       with {:ok, conn, websocket} <- Mint.WebSocket.new(conn, ref, 101, headers) do
-        handle_tcp_message(%{client | conn: conn, websocket: websocket}, [data_frame])
+        client = %{client | conn: conn, websocket: websocket}
+
+        if data_frame = Enum.find(frames, &match?({:data, ^ref, _}, &1)) do
+          handle_tcp_message(client, [data_frame])
+        else
+          {:ok, client, nil}
+        end
       end
     end
 
