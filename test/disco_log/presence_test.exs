@@ -61,6 +61,16 @@ defmodule DiscoLog.PresenceTest do
       %{client: client, pid: pid}
     end
 
+    test "Connect: no immediate Hello event", %{pid: pid} do
+      WebsocketClient.Mock
+      |> expect(:boil_message_to_frame, fn %WebsocketClient{} = client, {:ssl, :fake_upgrade} ->
+        {:ok, client, nil}
+      end)
+
+      send(pid, {:ssl, :fake_upgrade})
+      :sys.get_status(pid)
+    end
+
     test "Hello: sends Identify", %{pid: pid} do
       WebsocketClient.Mock
       |> expect(:boil_message_to_frame, fn %WebsocketClient{} = client, {:ssl, :fake_hello} ->

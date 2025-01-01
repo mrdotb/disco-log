@@ -17,7 +17,7 @@ defmodule DiscoLog.WebsocketClient do
   defdelegate connect(host, port, path), to: @adapter
 
   @callback boil_message_to_frame(client :: t(), message :: any()) ::
-              {:ok, t(), any()}
+              {:ok, t(), Mint.WebSocket.frame() | nil}
               | {:error, Mint.HTTP.t(), Mint.Types.error(), [Mint.Types.response()]}
               | {:error, Mint.HTTP.t(), Mint.Websocket.error()}
               | {:error, Mint.WebSocket.t(), any()}
@@ -60,6 +60,8 @@ defmodule DiscoLog.WebsocketClient do
       {:ok, :closed_by_server, reason}
     end
   end
+
+  defp handle_frame(client, nil), do: {:ok, client, nil}
 
   defp ack_server_closure(client) do
     with {:ok, client} <- send_frame(client, :close),
