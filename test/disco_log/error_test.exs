@@ -78,6 +78,18 @@ defmodule DiscoLog.ErrorTest do
 
       assert error1.fingerprint == error2.fingerprint
     end
+
+    test "includes bread crumbs in the context if present" do
+      bread_crumbs = ["bread crumb 1", "bread crumb 2"]
+
+      %Error{} =
+        error =
+        build_error(fn ->
+          raise ErrorWithBreadcrumbs, message: "test", bread_crumbs: bread_crumbs
+        end)
+
+      assert error.context["bread_crumbs"] == bread_crumbs
+    end
   end
 
   describe inspect(&Error.hash/1) do

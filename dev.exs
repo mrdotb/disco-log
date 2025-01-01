@@ -31,6 +31,10 @@ Application.put_env(:disco_log, DemoWeb.Endpoint,
   ]
 )
 
+defmodule ErrorWithBreadcrumbs do
+  defexception [:message, :bread_crumbs]
+end
+
 defmodule DemoWeb.PageController do
   import Plug.Conn
 
@@ -45,6 +49,7 @@ defmodule DemoWeb.PageController do
     <div><a href="/noroute">Raise NoRouteError from a controller</a></div>
     <div><a href="/exception">Generate Exception</a></div>
     <div><a href="/exit">Generate Exit</a></div>
+    <div><a href="/exception_with_bread_crumbs">Generate Exception with a bread crumbs</a></div>
 
     <h3>Liveview</h3>
     <div><a href="/liveview/mount_error">Generate LiveView mount error</a></div>
@@ -69,6 +74,11 @@ defmodule DemoWeb.PageController do
 
   def call(_conn, :exception) do
     raise "This is a controller exception"
+  end
+
+  def call(_conn, :exception_with_bread_crumbs) do
+    bread_crumbs = ["bread crumb 1", "bread crumb 2"]
+    raise ErrorWithBreadcrumbs, message: "test", bread_crumbs: bread_crumbs
   end
 
   def call(_conn, :exit) do
@@ -237,6 +247,7 @@ defmodule DemoWeb.Router do
     get("/noroute", DemoWeb.PageController, :noroute)
     get("/exception", DemoWeb.PageController, :exception)
     get("/exit", DemoWeb.PageController, :exit)
+    get("/exception_with_bread_crumbs", DemoWeb.PageController, :exception_with_bread_crumbs)
 
     get("/new_user", DemoWeb.LogController, :new_user)
     get("/user_upgrade", DemoWeb.LogController, :user_upgrade)

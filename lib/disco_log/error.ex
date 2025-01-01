@@ -33,6 +33,11 @@ defmodule DiscoLog.Error do
         do: "#{source.module}.#{source.function}/#{source.arity}",
         else: "nofunction"
 
+    context =
+      if bread_crumbs = get_bread_crumbs(exception),
+        do: Map.put(context, "bread_crumbs", bread_crumbs),
+        else: context
+
     %Error{
       kind: kind,
       reason: reason,
@@ -42,6 +47,14 @@ defmodule DiscoLog.Error do
       stacktrace: stacktrace,
       fingerprint: fingerprint(kind, source_line, source_function)
     }
+  end
+
+  defp get_bread_crumbs(exception) do
+    case exception do
+      {_kind, exception} -> get_bread_crumbs(exception)
+      %{bread_crumbs: bread_crumbs} -> bread_crumbs
+      _other -> nil
+    end
   end
 
   defp normalize_exception(%struct{} = ex, _stacktrace) when is_exception(ex) do
