@@ -21,7 +21,7 @@ defmodule DiscoLog.PresenceTest do
       expect(WebsocketClient.Mock, :connect, fn host, port, path ->
         assert "foo.bar" = host
         assert 443 = port
-        assert "/v=10&encoding=json" = path
+        assert "/?v=10&encoding=json" = path
         {:ok, %WebsocketClient{}}
       end)
 
@@ -31,7 +31,8 @@ defmodule DiscoLog.PresenceTest do
            [
              supervisor_name: __MODULE__,
              discord_config: %{token: "mytoken"},
-             discord: DiscordMock
+             discord: DiscordMock,
+             presence_status: "Status Message"
            ]}
         )
 
@@ -52,6 +53,7 @@ defmodule DiscoLog.PresenceTest do
              supervisor_name: __MODULE__,
              discord_config: %{token: "mytoken"},
              discord: DiscordMock,
+             presence_status: "Status Message",
              jitter: 1
            ]}
         )
@@ -71,7 +73,7 @@ defmodule DiscoLog.PresenceTest do
       :sys.get_status(pid)
     end
 
-    test "Hello: sends Identify", %{pid: pid} do
+    test "Hello: sends Identify and Update Presence", %{pid: pid} do
       WebsocketClient.Mock
       |> expect(:boil_message_to_frame, fn %WebsocketClient{} = client, {:ssl, :fake_hello} ->
         msg = %{
@@ -84,26 +86,42 @@ defmodule DiscoLog.PresenceTest do
 
         {:ok, client, [text: Jason.encode!(msg)]}
       end)
-      |> expect(:send_frame, fn %WebsocketClient{} = client, {:text, event} ->
-        assert %{
-                 "op" => 2,
-                 "d" => %{
-                   "token" => "mytoken",
-                   "intents" => 0,
-                   "presence?" => %{
+      |> expect(:send_frame, 2, fn
+        %WebsocketClient{ref: nil} = client, {:text, event} ->
+          assert %{
+                   "op" => 2,
+                   "d" => %{
+                     "token" => "mytoken",
+                     "intents" => 0,
+                     "presence?" => %{
+                       "since" => nil,
+                       "status" => "online",
+                       "afk" => false
+                     },
+                     "properties" => %{
+                       "os" => "BEAM",
+                       "browser" => "DiscoLog",
+                       "device" => "DiscoLog"
+                     }
+                   }
+                 } = Jason.decode!(event)
+
+          {:ok, %{client | ref: 1}}
+
+        %WebsocketClient{ref: 1} = client, {:text, event} ->
+          assert %{
+                   "op" => 3,
+                   "d" => %{
                      "since" => nil,
                      "status" => "online",
-                     "afk" => false
-                   },
-                   "properties" => %{
-                     "os" => "BEAM",
-                     "browser" => "DiscoLog",
-                     "device" => "DiscoLog"
+                     "afk" => false,
+                     "activities" => [
+                       %{"name" => "Name", "state" => "Status Message", "type" => 4}
+                     ]
                    }
-                 }
-               } = Jason.decode!(event)
+                 } = Jason.decode!(event)
 
-        {:ok, client}
+          {:ok, client}
       end)
 
       send(pid, {:ssl, :fake_hello})
@@ -125,11 +143,14 @@ defmodule DiscoLog.PresenceTest do
 
         {:ok, client, [text: Jason.encode!(msg)]}
       end)
-      |> expect(:send_frame, 2, fn
+      |> expect(:send_frame, 3, fn
         %WebsocketClient{ref: nil} = client, _event ->
           {:ok, %{client | ref: 1}}
 
-        %WebsocketClient{ref: 1} = client, {:text, event} ->
+        %WebsocketClient{ref: 1} = client, _event ->
+          {:ok, %{client | ref: 2}}
+
+        %WebsocketClient{ref: 2} = client, {:text, event} ->
           assert %{
                    "op" => 1,
                    "d" => 42
@@ -172,11 +193,11 @@ defmodule DiscoLog.PresenceTest do
 
         {:ok, client, [text: Jason.encode!(msg)]}
       end)
-      |> expect(:send_frame, 3, fn
+      |> expect(:send_frame, 4, fn
         client, {:text, _frame} ->
           {:ok, %{client | ref: 1}}
 
-        client, {:close, 1008, "server missed ack"} ->
+        %{ref: 1} = client, {:close, 1008, "server missed ack"} ->
           send(test_pid, :close_sent)
           {:ok, client}
       end)
@@ -251,6 +272,7 @@ defmodule DiscoLog.PresenceTest do
              supervisor_name: __MODULE__,
              discord_config: %{token: "mytoken"},
              discord: DiscordMock,
+             presence_status: "Status Message",
              jitter: 1
            ]}
         )
