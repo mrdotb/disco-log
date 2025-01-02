@@ -49,7 +49,8 @@ defmodule DiscoLog.Supervisor do
         {Presence,
          supervisor_name: config.supervisor_name,
          discord_config: config.discord_config,
-         discord: config.discord}
+         discord: config.discord,
+         presence_status: config.presence_status}
       ]
     else
       []

@@ -102,6 +102,11 @@ defmodule DiscoLog.Config do
       type: :atom,
       default: DiscoLog,
       doc: "Name of the supervisor process running DiscoLog"
+    ],
+    presence_status: [
+      type: :string,
+      default: "🪩 Disco Logging",
+      doc: "A message to display as the bot's status when presence is enabled"
     ]
   ]
 

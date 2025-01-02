@@ -9,6 +9,7 @@ defmodule DiscoLog.Presence do
   defstruct [
     :discord,
     :discord_config,
+    :presence_status,
     :registry,
     :websocket_client,
     :jitter,
@@ -33,6 +34,7 @@ defmodule DiscoLog.Presence do
     state = %__MODULE__{
       discord_config: Keyword.fetch!(opts, :discord_config),
       discord: Keyword.fetch!(opts, :discord),
+      presence_status: Keyword.fetch!(opts, :presence_status),
       jitter: Keyword.get_lazy(opts, :jitter, fn -> :rand.uniform() end)
     }
 
@@ -48,7 +50,7 @@ defmodule DiscoLog.Presence do
   def handle_continue(:connect, %__MODULE__{discord: discord, discord_config: config} = state) do
     {:ok, raw_uri} = discord.get_gateway(config)
     {:ok, uri} = URI.new(raw_uri)
-    {:ok, client} = WebsocketClient.connect(uri.host, uri.port, "/v=10&encoding=json")
+    {:ok, client} = WebsocketClient.connect(uri.host, uri.port, "/?v=10&encoding=json")
     {:noreply, %{state | websocket_client: client}}
   end
 
@@ -90,6 +92,26 @@ defmodule DiscoLog.Presence do
     }
 
     {:ok, client} = WebsocketClient.send_event(client, identify_event)
+    {:noreply, %{state | websocket_client: client}, {:continue, :update_presence}}
+  end
+
+  # Update Presence after Hello event
+  # https://discord.com/developers/docs/events/gateway-events#update-presence
+  def handle_continue(
+        :update_presence,
+        %__MODULE__{websocket_client: client, presence_status: presence_status} = state
+      ) do
+    update_presence_event = %{
+      op: 3,
+      d: %{
+        activities: [%{type: 4, state: presence_status, name: "Name"}],
+        since: nil,
+        status: "online",
+        afk: false
+      }
+    }
+
+    {:ok, client} = WebsocketClient.send_event(client, update_presence_event)
     {:noreply, %{state | websocket_client: client}}
   end
 
