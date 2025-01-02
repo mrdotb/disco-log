@@ -234,10 +234,15 @@ defmodule DiscoLog.PresenceTest do
   end
 
   describe "Fail modes" do
-    setup do
+    setup tags do
       stub(DiscordMock, :get_gateway, fn _config -> {:ok, "wss://gateway.discord.gg"} end)
-      client = %WebsocketClient{state: :open, websocket: %Mint.WebSocket{}}
-      stub(WebsocketClient.Mock, :connect, fn _, _, _ -> {:ok, client} end)
+
+      client =
+        Map.merge(%{state: :open, websocket: %Mint.WebSocket{}}, Map.get(tags, :client, %{}))
+
+      stub(WebsocketClient.Mock, :connect, fn _, _, _ ->
+        {:ok, struct(WebsocketClient, client)}
+      end)
 
       pid =
         start_supervised!(
@@ -305,6 +310,22 @@ defmodule DiscoLog.PresenceTest do
 
       send(pid, {:ssl, :fake_server_closed})
       assert_receive {:DOWN, ^ref, :process, ^pid, {:shutdown, {:closed_by_server, "reason"}}}
+    end
+
+    @tag client: %{state: nil, websocket: nil}
+    test "shuts down if upgrade fails with HTTP status code", %{pid: pid} do
+      ref = Process.monitor(pid)
+
+      WebsocketClient.Mock
+      |> expect(:connect, fn _, _, _ -> {:ok, %WebsocketClient{}} end)
+      |> expect(:boil_message_to_frame, fn _client, {:ssl, :fake_upgrade} ->
+        {:error, nil, %Mint.WebSocket.UpgradeFailureError{status_code: 520}}
+      end)
+
+      send(pid, {:ssl, :fake_upgrade})
+
+      assert_receive {:DOWN, ^ref, :process, ^pid,
+                      {:shutdown, %Mint.WebSocket.UpgradeFailureError{status_code: 520}}}
     end
   end
 end

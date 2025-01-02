@@ -19,7 +19,7 @@ defmodule DiscoLog.WebsocketClient do
   @callback boil_message_to_frame(client :: t(), message :: any()) ::
               {:ok, t(), Mint.WebSocket.frame() | nil}
               | {:error, Mint.HTTP.t(), Mint.Types.error(), [Mint.Types.response()]}
-              | {:error, Mint.HTTP.t(), Mint.Websocket.error()}
+              | {:error, Mint.HTTP.t(), Mint.WebSocket.error()}
               | {:error, Mint.WebSocket.t(), any()}
               | :unknown
   defdelegate boil_message_to_frame(client, message), to: @adapter
