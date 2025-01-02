@@ -152,6 +152,9 @@ defmodule DiscoLog.Presence do
       {:ok, client, msg} ->
         {:noreply, %{state | websocket_client: client}, {:continue, {:event, msg}}}
 
+      {:error, _conn, %Mint.WebSocket.UpgradeFailureError{} = error} ->
+        {:stop, {:shutdown, error}, state}
+
       other ->
         {:stop, other, state}
     end
