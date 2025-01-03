@@ -16,7 +16,11 @@ config :disco_log,
   enable_logger: true,
   instrument_oban: true,
   instrument_phoenix: true,
-  metadata: [:extra]
+  metadata: [:extra],
+  enable_go_to_repo: true,
+  repo_url: "https://github.com/mrdotb/disco-log/blob",
+  # a real git sha is better but for testing purposes you can use a branch
+  git_sha: "main"
 
 config :logger,
   # backends: [],

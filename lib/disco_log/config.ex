@@ -107,6 +107,27 @@ defmodule DiscoLog.Config do
       type: :string,
       default: "🪩 Disco Logging",
       doc: "A message to display as the bot's status when presence is enabled"
+    ],
+    enable_go_to_repo: [
+      type: :boolean,
+      default: false,
+      doc: "Enable go_to_repo feature?"
+    ],
+    go_to_repo_top_modules: [
+      type: {:list, :string},
+      default: [],
+      doc:
+        "List of top-level modules that are not part of the application spec but code belongs to the app"
+    ],
+    repo_url: [
+      type: :string,
+      default: "",
+      doc: "URL to the git repository viewer"
+    ],
+    git_sha: [
+      type: :string,
+      default: "",
+      doc: "The git SHA of the running app"
     ]
   ]
 
