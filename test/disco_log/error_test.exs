@@ -12,6 +12,7 @@ defmodule DiscoLog.ErrorTest do
       assert error.kind == to_string(RuntimeError)
       assert error.reason == "This is a test"
       assert error.source_line =~ @relative_file_path
+      assert error.source_url =~ @relative_file_path
 
       assert error.source_function ==
                "DiscoLog.ErrorTest.-test &DiscoLog.Error.new/4 exceptions/1-fun-0-/0"
@@ -36,6 +37,8 @@ defmodule DiscoLog.ErrorTest do
         assert error.source_function == "erlang.+/2"
         assert error.source_line == "nofile"
       end
+
+      assert error.source_url =~ @relative_file_path
     end
 
     test "undefined function errors" do
@@ -50,6 +53,7 @@ defmodule DiscoLog.ErrorTest do
       assert error.reason =~ "is undefined or private"
       assert error.source_function == Exception.format_mfa(m, f, Enum.count(a))
       assert error.source_line == "nofile"
+      assert error.source_url == nil
     end
 
     test "throws" do
@@ -60,6 +64,7 @@ defmodule DiscoLog.ErrorTest do
       assert error.kind == "throw"
       assert error.reason == "This is a test"
       assert error.source_line =~ @relative_file_path
+      assert error.source_url =~ @relative_file_path
     end
 
     test "exits" do
@@ -70,6 +75,7 @@ defmodule DiscoLog.ErrorTest do
       assert error.kind == "exit"
       assert error.reason == "This is a test"
       assert error.source_line =~ @relative_file_path
+      assert error.source_url =~ @relative_file_path
     end
 
     test "similar error should have the same fingerprint " do

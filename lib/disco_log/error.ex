@@ -13,18 +13,19 @@ defmodule DiscoLog.Error do
           source_function: String.t(),
           context: any(),
           stacktrace: Stacktrace.t(),
-          fingerprint: String.t()
+          fingerprint: String.t(),
+          source_url: String.t() | nil
         }
 
-  defstruct ~w(kind reason source_line source_function context stacktrace fingerprint)a
+  defstruct ~w(kind reason source_line source_function context stacktrace fingerprint source_url)a
 
-  def new(exception, stacktrace, context, client_app) do
+  def new(exception, stacktrace, context, config) do
     {kind, reason} = normalize_exception(exception, stacktrace)
     stacktrace = Stacktrace.new(stacktrace)
-    source = Stacktrace.source(stacktrace, client_app)
+    source = Stacktrace.source(stacktrace, config.otp_app)
 
     source_line =
-      if is_map(source) and not is_nil(source.file) and source.file != "",
+      if is_map(source) and is_binary(source.file) and source.file != "",
         do: "#{source.file}:#{source.line}",
         else: "nofile"
 
@@ -33,6 +34,15 @@ defmodule DiscoLog.Error do
         do: "#{source.module}.#{source.function}/#{source.arity}",
         else: "nofunction"
 
+    source_url =
+      with true <- config.enable_go_to_repo,
+           %{file: file} = app_source when is_binary(file) and file != "" <-
+             Stacktrace.app_source(stacktrace, config.otp_app, config.go_to_repo_top_modules) do
+        get_source_url(config, app_source)
+      else
+        _ -> nil
+      end
+
     %Error{
       kind: kind,
       reason: reason,
@@ -40,7 +50,8 @@ defmodule DiscoLog.Error do
       source_function: source_function,
       context: context,
       stacktrace: stacktrace,
-      fingerprint: fingerprint(kind, source_line, source_function)
+      fingerprint: fingerprint(kind, source_line, source_function),
+      source_url: source_url
     }
   end
 
@@ -89,5 +100,9 @@ defmodule DiscoLog.Error do
       error.stacktrace,
       error.context
     ])
+  end
+
+  defp get_source_url(config, source) do
+    "#{config[:repo_url]}/#{config[:git_sha]}/#{source.file}#L#{source.line}"
   end
 end
