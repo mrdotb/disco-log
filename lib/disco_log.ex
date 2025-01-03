@@ -6,7 +6,7 @@ defmodule DiscoLog do
     config = config || DiscoLog.Config.read!()
     context = Map.merge(DiscoLog.Context.get(), given_context)
 
-    error = DiscoLog.Error.new(exception, stacktrace, context, config.otp_app)
+    error = DiscoLog.Error.new(exception, stacktrace, context, config)
     DiscoLog.Client.send_error(error, config)
   end
 end

@@ -99,27 +99,41 @@ defmodule DiscoLog.Discord.Context do
         **At:** <t:#{System.os_time(:second)}:T>
         **Kind:** `#{error.kind}`
         **Reason:** `#{error.reason}`
-        **Source Line:** `#{error.source_line}`
+        **Source Line:** #{source_line(error)}
         **Source Function:** `#{error.source_function}`
         **Fingerprint:** `#{error.fingerprint}`
       """
-      # Maybe there is something nice to do with embeds fields
-      # https://discordjs.guide/popular-topics/embeds.html#embed-preview
-      # embeds: [
-      #   %{
-      #     fields: [
-      #       %{name: "at", value: "<t:#{System.os_time(:second)}:T>"},
-      #       %{name: "kind", value: backtick_wrap(error.kind)},
-      #       %{name: "reason", value: backtick_wrap(error.reason)},
-      #       %{name: "source_line", value: backtick_wrap(error.source_line)},
-      #       %{name: "source_function", value: backtick_wrap(error.source_function)},
-      #       %{name: "fingerprint", value: backtick_wrap(error.fingerprint)}
-      #     ]
-      #   }
-      # ]
     }
   end
 
+  # source line can be a link to the source code if source_url is set
+  defp source_line(error) do
+    if error.source_url do
+      # we wrap the url with `<>` to prevent an embed preview to be created
+      "[`#{error.source_line}`](<#{error.source_url}>)"
+    else
+      "`#{error.source_line}`"
+    end
+  end
+
+  # Note can we do something nicer using discord embeds ?
+  # defp prepare_error_message(error) do
+  # %{
+  # Maybe there is something nice to do with embeds fields
+  # https://discordjs.guide/popular-topics/embeds.html#embed-preview
+  # embeds: [
+  #   %{
+  #     fields: [
+  #       %{name: "at", value: "<t:#{System.os_time(:second)}:T>"},
+  #       %{name: "kind", value: backtick_wrap(error.kind)},
+  #       %{name: "reason", value: backtick_wrap(error.reason)},
+  #       %{name: "source_line", value: backtick_wrap(error.source_line)},
+  #       %{name: "source_function", value: backtick_wrap(error.source_function)},
+  #       %{name: "fingerprint", value: backtick_wrap(error.fingerprint)}
+  #     ]
+  #   }
+  # ]
+  # end
   # defp backtick_wrap(string), do: "`#{string}`"
 
   defp maybe_put_tag(config, message, context) do

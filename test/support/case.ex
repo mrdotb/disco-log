@@ -2,6 +2,23 @@ defmodule DiscoLog.Test.Case do
   @moduledoc false
   use ExUnit.CaseTemplate
 
+  @config DiscoLog.Config.validate!(
+            otp_app: :disco_log,
+            token: "mytoken",
+            guild_id: "guild_id",
+            category_id: "category_id",
+            occurrences_channel_id: "occurences_channel_id",
+            occurrences_channel_tags: %{},
+            info_channel_id: "info_channel_id",
+            error_channel_id: "error_channel_id",
+            discord: DiscoLog.DiscordMock,
+            enable_presence: false,
+            enable_go_to_repo: true,
+            go_to_repo_top_modules: ["DiscoLog"],
+            repo_url: "https://github.com/mrdotb/disco-log/blob",
+            git_sha: "main"
+          )
+
   using do
     quote do
       import DiscoLog.Test.Case
@@ -15,10 +32,10 @@ defmodule DiscoLog.Test.Case do
     fun.()
   rescue
     exception ->
-      DiscoLog.Error.new(exception, __STACKTRACE__, %{}, :app_name)
+      DiscoLog.Error.new(exception, __STACKTRACE__, %{}, @config)
   catch
     kind, reason ->
-      DiscoLog.Error.new({kind, reason}, __STACKTRACE__, %{}, :app_name)
+      DiscoLog.Error.new({kind, reason}, __STACKTRACE__, %{}, @config)
   end
 
   @doc """

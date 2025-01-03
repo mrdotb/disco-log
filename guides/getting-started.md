@@ -108,24 +108,104 @@ config :disco_log,
   enable: false
 ```
 
-## Presence
+## Presence Status
 
-Optionally, DiscoLog can set your bot status to Online. To do this, add `mint_web_socket` package to your dependencies:
+DiscoLog can optionally set your bot's status to **Online**, allowing you to display a custom presence message. 
 
-```elixir
-defp deps do
-  [
-    {:disco_log, "~> 0.7.0"},
-    {:mint_web_socket, "~> 1.0"}
-  ]
-end
-```
+### Steps to Enable Presence Status
 
-and enable presence flag in the config:
+1. **Add the `mint_web_socket` Package**  
+   Update your dependencies in `mix.exs`:
+
+   ```elixir
+   defp deps do
+     [
+       {:disco_log, "~> 0.7.0"},
+       {:mint_web_socket, "~> 1.0"}
+     ]
+   end
+   ```
+
+2. **Configure the Presence Settings**  
+   Add the following to your `config.exs` or `prod/config.exs`:
+
+   ```elixir
+   config :disco_log,
+     enable_presence: true,
+     presence_status: "🪩 Disco Logging" # Optional, defaults to this value
+   ```
+
+*Bot with Presence*
+<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/21-presence.png" alt="Presence status" />
+
+## Go to Repo Feature
+
+The **Go to Repo** feature allows DiscoLog to link directly to your code repository (e.g., GitHub). This enables users to easily access the specific version of the code related to a log entry.
+
+### Example Interface
+*Link to GitHub code*
+<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/22-go-to-code.png" alt="Go to code" />
+
+### Configuration Instructions
+
+To enable this feature, add the following configuration to your `prod/config.exs`:
 
 ```elixir
 config :disco_log,
-  enable_presence: true
+  enable_go_to_repo: true,
+  go_to_repo_top_modules: ["DemoWeb"], # Optional, see notes below
+  repo_url: "https://github.com/mrdotb/disco-log/blob",
+  git_sha: System.fetch_env!("GIT_SHA") # See notes on setting the GIT_SHA below
 ```
+
+### Setting the `GIT_SHA`
+
+The `GIT_SHA` should be the commit hash of the current code version. This ensures links reference the correct version of the code. Here’s how you can set it, depending on your deployment process:
+
+#### 1. **Bare Metal Deployments**
+If you build your release on your own machine, you can set the environment variable using this command:
+
+```bash
+GIT_SHA=`git rev-parse HEAD` MIX_ENV=prod mix release
+```
+
+#### 2. **Docker Deployments**
+When building a Docker image, pass the `GIT_SHA` as a build argument:
+
+**Build Command**:
+```bash
+docker build --build-arg GIT_SHA=`git rev-parse HEAD` .
+```
+
+**Dockerfile**:
+```Dockerfile
+ARG GIT_SHA
+
+# Set build environment variables
+ENV MIX_ENV="prod"
+ENV GIT_SHA=${GIT_SHA}
+```
+
+#### 3. **CI/CD Pipelines**
+In CI/CD environments (e.g., GitHub Actions), the `GIT_SHA` is often available as a predefined environment variable. You can pass it during the build process as follows:
+
+**Example GitHub Actions Workflow**:
+```yaml
+- name: Build and Push Docker Image to GHCR
+  uses: docker/build-push-action@v5
+  with:
+    context: .
+    push: true
+    tags: ${{ steps.meta.outputs.tags }}
+    labels: ${{ steps.meta.outputs.labels }}
+    build-args: |
+      BUILD_METADATA=${{ steps.meta.outputs.json }}
+      ERL_FLAGS=+JPperf true
+      GIT_SHA=${{ github.sha }}
+```
+
+### Notes
+- The `repo_url` configuration should point to the root of your repository's code (e.g., `https://github.com/<user>/<repo>/blob`).
+- The `go_to_repo_top_modules` configuration is optional. Use it only if your project contains external modules within the repository.
 
 Enjoy using DiscoLog!

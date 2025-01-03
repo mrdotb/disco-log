@@ -142,7 +142,7 @@ defmodule DiscoLog.LoggerHandler do
        )
        when is_exception(exception) and is_list(stacktrace) do
     context = Map.put(Context.get(), :metadata, metadata)
-    error = Error.new(exception, stacktrace, context, config.otp_app)
+    error = Error.new(exception, stacktrace, context, config)
     Client.send_error(error, config)
     :ok
   end
@@ -165,14 +165,14 @@ defmodule DiscoLog.LoggerHandler do
       when type in [:noproc, :timeout] ->
         reason = Exception.format_exit(reason)
         context = Map.put(context, :extra_reason, reason)
-        error = Error.new({"genserver_call", type}, stacktrace, context, config.otp_app)
+        error = Error.new({"genserver_call", type}, stacktrace, context, config)
         Client.send_error(error, config)
 
       _other ->
         context =
           Map.put(context, :extra_info_from_genserver, try_to_parse_message(chardata_message))
 
-        error = Error.new(reason, stacktrace, context, config.otp_app)
+        error = Error.new(reason, stacktrace, context, config)
         Client.send_error(error, config)
     end
 
@@ -341,12 +341,12 @@ defmodule DiscoLog.LoggerHandler do
     case Map.new(report) do
       %{reason: {exception, stacktrace}} when is_exception(exception) and is_list(stacktrace) ->
         context = Map.put(Context.get(), :metadata, metadata)
-        error = Error.new(exception, stacktrace, context, config.otp_app)
+        error = Error.new(exception, stacktrace, context, config)
         Client.send_error(error, config)
 
       %{reason: {reason, stacktrace}} when is_list(stacktrace) ->
         context = Map.put(Context.get(), :metadata, metadata)
-        error = Error.new(reason, stacktrace, context, config.otp_app)
+        error = Error.new(reason, stacktrace, context, config)
         Client.send_error(error, config)
 
       %{reason: reason} ->
