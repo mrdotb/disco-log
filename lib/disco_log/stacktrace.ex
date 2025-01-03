@@ -12,12 +12,13 @@ defmodule DiscoLog.Stacktrace do
     @type t :: %__MODULE__{
             application: String.t(),
             module: String.t(),
+            top_module: String.t(),
             function: String.t(),
             arity: non_neg_integer(),
             file: String.t() | nil,
             line: non_neg_integer() | nil
           }
-    defstruct ~w(application module function arity file line)a
+    defstruct ~w(application module top_module function arity file line)a
   end
 
   @type t :: %Stacktrace{
@@ -30,10 +31,12 @@ defmodule DiscoLog.Stacktrace do
     lines_params =
       for {module, function, arity, opts} <- stack do
         application = Application.get_application(module)
+        module_string = to_string(module) |> String.replace_prefix("Elixir.", "")
 
         %Line{
           application: to_string(application),
-          module: module |> to_string() |> String.replace_prefix("Elixir.", ""),
+          module: module_string,
+          top_module: module_string |> String.split(".") |> hd(),
           function: to_string(function),
           arity: normalize_arity(arity),
           file: to_string(opts[:file]),
@@ -55,6 +58,13 @@ defmodule DiscoLog.Stacktrace do
   """
   def source(%Stacktrace{} = stack, client_app) do
     Enum.find(stack.lines, &(&1.application == client_app)) || List.first(stack.lines)
+  end
+
+  @doc """
+  Source of the error stack trace if it belongs to the given application.
+  """
+  def app_source(%Stacktrace{} = stack, client_app, top_modules) do
+    Enum.find(stack.lines, &(&1.application == client_app || &1.top_module in top_modules))
   end
 end
 
