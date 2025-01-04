@@ -71,14 +71,19 @@ defmodule DiscoLog.Presence do
   # https://discord.com/developers/docs/events/gateway#identifying
   def handle_continue(
         :identify,
-        %__MODULE__{discord_config: config, websocket_client: client} = state
+        %__MODULE__{
+          discord_config: config,
+          websocket_client: client,
+          presence_status: presence_status
+        } = state
       ) do
     identify_event = %{
       op: 2,
       d: %{
         token: config.token,
         intents: 0,
-        presence?: %{
+        presence: %{
+          activities: [%{type: 4, state: presence_status, name: "Name"}],
           since: nil,
           status: "online",
           afk: false
@@ -92,26 +97,6 @@ defmodule DiscoLog.Presence do
     }
 
     {:ok, client} = WebsocketClient.send_event(client, identify_event)
-    {:noreply, %{state | websocket_client: client}, {:continue, :update_presence}}
-  end
-
-  # Update Presence after Hello event
-  # https://discord.com/developers/docs/events/gateway-events#update-presence
-  def handle_continue(
-        :update_presence,
-        %__MODULE__{websocket_client: client, presence_status: presence_status} = state
-      ) do
-    update_presence_event = %{
-      op: 3,
-      d: %{
-        activities: [%{type: 4, state: presence_status, name: "Name"}],
-        since: nil,
-        status: "online",
-        afk: false
-      }
-    }
-
-    {:ok, client} = WebsocketClient.send_event(client, update_presence_event)
     {:noreply, %{state | websocket_client: client}}
   end
 
