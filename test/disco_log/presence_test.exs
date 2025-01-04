@@ -73,7 +73,7 @@ defmodule DiscoLog.PresenceTest do
       :sys.get_status(pid)
     end
 
-    test "Hello: sends Identify and Update Presence", %{pid: pid} do
+    test "Hello: sends Identify event", %{pid: pid} do
       WebsocketClient.Mock
       |> expect(:boil_message_to_frame, fn %WebsocketClient{} = client, {:ssl, :fake_hello} ->
         msg = %{
@@ -86,42 +86,29 @@ defmodule DiscoLog.PresenceTest do
 
         {:ok, client, [text: Jason.encode!(msg)]}
       end)
-      |> expect(:send_frame, 2, fn
-        %WebsocketClient{ref: nil} = client, {:text, event} ->
-          assert %{
-                   "op" => 2,
-                   "d" => %{
-                     "token" => "mytoken",
-                     "intents" => 0,
-                     "presence?" => %{
-                       "since" => nil,
-                       "status" => "online",
-                       "afk" => false
-                     },
-                     "properties" => %{
-                       "os" => "BEAM",
-                       "browser" => "DiscoLog",
-                       "device" => "DiscoLog"
-                     }
-                   }
-                 } = Jason.decode!(event)
-
-          {:ok, %{client | ref: 1}}
-
-        %WebsocketClient{ref: 1} = client, {:text, event} ->
-          assert %{
-                   "op" => 3,
-                   "d" => %{
-                     "since" => nil,
-                     "status" => "online",
-                     "afk" => false,
+      |> expect(:send_frame, fn client, {:text, event} ->
+        assert %{
+                 "op" => 2,
+                 "d" => %{
+                   "token" => "mytoken",
+                   "intents" => 0,
+                   "presence" => %{
                      "activities" => [
                        %{"name" => "Name", "state" => "Status Message", "type" => 4}
-                     ]
+                     ],
+                     "since" => nil,
+                     "status" => "online",
+                     "afk" => false
+                   },
+                   "properties" => %{
+                     "os" => "BEAM",
+                     "browser" => "DiscoLog",
+                     "device" => "DiscoLog"
                    }
-                 } = Jason.decode!(event)
+                 }
+               } = Jason.decode!(event)
 
-          {:ok, client}
+        {:ok, client}
       end)
 
       send(pid, {:ssl, :fake_hello})
@@ -143,14 +130,11 @@ defmodule DiscoLog.PresenceTest do
 
         {:ok, client, [text: Jason.encode!(msg)]}
       end)
-      |> expect(:send_frame, 3, fn
+      |> expect(:send_frame, 2, fn
         %WebsocketClient{ref: nil} = client, _event ->
           {:ok, %{client | ref: 1}}
 
-        %WebsocketClient{ref: 1} = client, _event ->
-          {:ok, %{client | ref: 2}}
-
-        %WebsocketClient{ref: 2} = client, {:text, event} ->
+        %WebsocketClient{ref: 1} = client, {:text, event} ->
           assert %{
                    "op" => 1,
                    "d" => 42
@@ -193,7 +177,7 @@ defmodule DiscoLog.PresenceTest do
 
         {:ok, client, [text: Jason.encode!(msg)]}
       end)
-      |> expect(:send_frame, 4, fn
+      |> expect(:send_frame, 3, fn
         client, {:text, _frame} ->
           {:ok, %{client | ref: 1}}
 
