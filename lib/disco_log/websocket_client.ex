@@ -62,6 +62,7 @@ defmodule DiscoLog.WebsocketClient do
   end
 
   defp handle_frame(client, nil), do: {:ok, client, nil}
+  defp handle_frame(client, []), do: {:ok, client, nil}
 
   defp ack_server_closure(client) do
     with {:ok, client} <- send_frame(client, :close),
