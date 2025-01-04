@@ -5,6 +5,25 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v0.8.0-rc.0](https://github.com/mrdotb/disco-log/compare/v0.7.0...v0.8.0-rc.0) (2025-01-04)
+
+
+
+
+### Features:
+
+* go-to-repo: create a link to the repo viewer on discord report
+
+* presence: set basic presence status ð
+
+* Add Presence
+
+### Bug Fixes:
+
+* presence: handle non-101 response status for ws upgrade request
+
+* presence: do not expect 101 Upgrade response to have data
+
 ## [v0.7.0](https://github.com/mrdotb/disco-log/compare/v0.6.0...v0.7.0) (2024-12-09)
 
 
