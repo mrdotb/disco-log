@@ -262,8 +262,8 @@ defmodule DiscoLog.LoggerHandlerTest do
       end)
 
       assert_receive {^ref, error}
-      assert error.kind == "bad_return_value"
-      assert error.reason == "testing_throw"
+      assert error.kind == "genserver"
+      assert error.reason =~ "testing_throw"
       assert error.source_line == "nofile"
       assert error.source_function == "nofunction"
       assert error.context.extra_info_from_message.last_message =~ "GenServer throw is reported"
@@ -284,8 +284,8 @@ defmodule DiscoLog.LoggerHandlerTest do
       end)
 
       assert_receive {^ref, error}
-      assert error.kind == "exit"
-      assert error.reason == "bad_exit"
+      assert error.kind == "genserver"
+      assert error.reason =~ "bad_exit"
       assert error.source_line == "nofile"
       assert error.source_function == "nofunction"
       assert error.context.extra_info_from_message.last_message =~ "GenServer exit is reported"
@@ -359,6 +359,26 @@ defmodule DiscoLog.LoggerHandlerTest do
       assert_receive {^ref, error}
       assert error.kind == to_string(RuntimeError)
       assert error.reason == "Hello World"
+    end
+
+    test "an exit with a struct is reported nicely",
+         %{test_genserver: test_genserver} do
+      pid = self()
+      ref = make_ref()
+
+      DiscordMock
+      |> allow(pid, test_genserver)
+      |> expect(:create_occurrence_thread, fn _config, error ->
+        send(pid, {ref, error})
+      end)
+
+      run_and_catch_exit(test_genserver, fn ->
+        {:stop, %Mint.HTTP1{}, :no_state}
+      end)
+
+      assert_receive {^ref, error}
+      assert error.kind == "genserver"
+      assert error.reason =~ "** (stop) %Mint.HTTP1"
     end
 
     test "GenServer timeout is reported", %{test_genserver: test_genserver} do

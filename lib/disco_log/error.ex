@@ -59,6 +59,16 @@ defmodule DiscoLog.Error do
     {to_string(struct), Exception.message(ex)}
   end
 
+  defp normalize_exception({kind, reason}, _stacktrace)
+       when is_binary(kind) and is_binary(reason) do
+    {kind, reason}
+  end
+
+  defp normalize_exception({kind, reason}, _stacktrace)
+       when is_atom(kind) and is_binary(reason) do
+    {to_string(kind), reason}
+  end
+
   defp normalize_exception({kind, ex}, stacktrace) do
     case Exception.normalize(kind, ex, stacktrace) do
       %struct{} = ex ->

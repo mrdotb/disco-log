@@ -169,11 +169,18 @@ defmodule DiscoLog.LoggerHandler do
         Client.send_error(error, config)
 
       _other ->
-        context =
-          Map.put(context, :extra_info_from_genserver, try_to_parse_message(chardata_message))
+        case try_to_parse_message(chardata_message) do
+          nil ->
+            error = Error.new(reason, stacktrace, context, config)
+            Client.send_error(error, config)
 
-        error = Error.new(reason, stacktrace, context, config)
-        Client.send_error(error, config)
+          %{reason: reason} = parsed_message ->
+            context =
+              Map.put(context, :extra_info_from_genserver, Map.delete(parsed_message, :reason))
+
+            error = Error.new({"genserver", reason}, stacktrace, context, config)
+            Client.send_error(error, config)
+        end
     end
 
     :ok
@@ -252,6 +259,7 @@ defmodule DiscoLog.LoggerHandler do
     string_reason = chardata_reason |> :unicode.characters_to_binary() |> String.trim()
 
     %{
+      reason: string_reason,
       last_message: inspected_last_message,
       message: "GenServer %{} terminating: #{string_reason}",
       state: inspected_state
@@ -275,6 +283,7 @@ defmodule DiscoLog.LoggerHandler do
     string_reason = chardata_reason |> :unicode.characters_to_binary() |> String.trim()
 
     %{
+      reason: string_reason,
       last_message: inspected_last_message,
       message: "GenServer %{} terminating: #{string_reason}",
       state: inspected_state
@@ -296,6 +305,7 @@ defmodule DiscoLog.LoggerHandler do
     string_reason = chardata_reason |> :unicode.characters_to_binary() |> String.trim()
 
     %{
+      reason: string_reason,
       last_message: inspected_last_message,
       message: "GenServer %{} terminating: #{string_reason}",
       state: inspected_state
@@ -303,7 +313,7 @@ defmodule DiscoLog.LoggerHandler do
   end
 
   defp try_to_parse_message(_chardata_message) do
-    %{}
+    nil
   end
 
   # Some metadata like PID are not serializable to JSON a better approach is
