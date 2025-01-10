@@ -5,6 +5,17 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v0.8.0-rc.2](https://github.com/mrdotb/disco-log/compare/v0.8.0-rc.1...v0.8.0-rc.2) (2025-01-10)
+
+
+
+
+### Bug Fixes:
+
+* presence: handle ssl_closed message
+
+* genserver stop struct remove logger handler
+
 ## [v0.8.0-rc.1](https://github.com/mrdotb/disco-log/compare/v0.8.0-rc.0...v0.8.0-rc.1) (2025-01-06)
 
 
