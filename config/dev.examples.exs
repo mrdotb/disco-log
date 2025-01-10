@@ -6,11 +6,6 @@ config :disco_log,
   guild_id: "",
   category_id: "",
   occurrences_channel_id: "",
-  occurrences_channel_tags: %{
-    "plug" => "",
-    "live_view" => "",
-    "oban" => ""
-  },
   info_channel_id: "",
   error_channel_id: "",
   enable_logger: true,

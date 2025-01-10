@@ -14,11 +14,17 @@ defmodule DiscoLog.StorageTest do
   end
 
   describe "start_link" do
-    test "loads occurences on startup" do
-      expect(DiscordMock, :list_occurrence_threads, fn _config, channel_id ->
+    test "loads occurences and tags on startup" do
+      DiscordMock
+      |> expect(:list_occurrence_threads, fn _config, channel_id ->
         assert channel_id == "channel_id"
 
         [{"fingerprint", "thread_id"}]
+      end)
+      |> expect(:list_tags, fn _config, channel_id ->
+        assert channel_id == "channel_id"
+
+        %{"oban" => "oban_tag_id"}
       end)
 
       pid =
@@ -34,13 +40,18 @@ defmodule DiscoLog.StorageTest do
       _ = :sys.get_status(pid)
 
       assert [{pid, %{"fingerprint" => "thread_id"}}] ==
-               Registry.lookup(__MODULE__.Registry, Storage)
+               Registry.lookup(__MODULE__.Registry, {Storage, :threads})
+
+      assert [{pid, %{"oban" => "oban_tag_id"}}] ==
+               Registry.lookup(__MODULE__.Registry, {Storage, :tags})
     end
   end
 
   describe inspect(&Storage.get_thread_id/2) do
     setup do
-      stub(DiscordMock, :list_occurrence_threads, fn _, _ -> [{"fingerprint", "thread_id"}] end)
+      DiscordMock
+      |> stub(:list_occurrence_threads, fn _, _ -> [{"fingerprint", "thread_id"}] end)
+      |> stub(:list_tags, fn _, _ -> %{"oban" => "oban_tag_id"} end)
 
       pid =
         start_link_supervised!(
@@ -67,7 +78,9 @@ defmodule DiscoLog.StorageTest do
 
   describe inspect(&Storage.add_thread_id/3) do
     setup do
-      stub(DiscordMock, :list_occurrence_threads, fn _, _ -> [{"fingerprint", "thread_id"}] end)
+      DiscordMock
+      |> stub(:list_occurrence_threads, fn _, _ -> [{"fingerprint", "thread_id"}] end)
+      |> stub(:list_tags, fn _, _ -> %{"oban" => "oban_tag_id"} end)
 
       pid =
         start_link_supervised!(
@@ -87,19 +100,44 @@ defmodule DiscoLog.StorageTest do
       assert :ok = Storage.add_thread_id(__MODULE__, "foo", "bar")
 
       assert [{_, %{"foo" => "bar"}}] =
-               Registry.lookup(__MODULE__.Registry, Storage)
+               Registry.lookup(__MODULE__.Registry, {Storage, :threads})
     end
 
     test "overwrites thread_id" do
       assert :ok = Storage.add_thread_id(__MODULE__, "foo", "bar")
 
       assert [{_, %{"foo" => "bar"}}] =
-               Registry.lookup(__MODULE__.Registry, Storage)
+               Registry.lookup(__MODULE__.Registry, {Storage, :threads})
 
       assert :ok = Storage.add_thread_id(__MODULE__, "foo", "baz")
 
       assert [{_, %{"foo" => "baz"}}] =
-               Registry.lookup(__MODULE__.Registry, Storage)
+               Registry.lookup(__MODULE__.Registry, {Storage, :threads})
+    end
+  end
+
+  describe inspect(&Storage.get_tags/1) do
+    setup do
+      DiscordMock
+      |> stub(:list_occurrence_threads, fn _, _ -> [{"fingerprint", "thread_id"}] end)
+      |> stub(:list_tags, fn _, _ -> %{"oban" => "oban_tag_id"} end)
+
+      pid =
+        start_link_supervised!(
+          {Storage,
+           [
+             supervisor_name: __MODULE__,
+             discord_config: %{token: "mytoken", occurrences_channel_id: "channel_id"},
+             discord: DiscordMock
+           ]}
+        )
+
+      _ = :sys.get_status(pid)
+      :ok
+    end
+
+    test "retrieves all tags" do
+      assert %{"oban" => "oban_tag_id"} == Storage.get_tags(__MODULE__)
     end
   end
 end

@@ -36,6 +36,8 @@ defmodule DiscoLog.DiscordBehaviour do
   @callback delete_threads(config(), channel_id :: String.t()) :: list(any)
 
   @callback get_gateway(config()) :: {:ok, String.t()} | {:error, String.t()}
+
+  @callback list_tags(config(), occurence_channel_id :: String.t()) :: map()
 end
 
 defmodule DiscoLog.Discord do
@@ -76,4 +78,7 @@ defmodule DiscoLog.Discord do
 
   @impl true
   defdelegate get_gateway(config), to: Discord.Context
+
+  @impl true
+  defdelegate list_tags(config, occurence_channel_id), to: Discord.Context
 end

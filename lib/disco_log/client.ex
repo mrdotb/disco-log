@@ -7,6 +7,8 @@ defmodule DiscoLog.Client do
   alias DiscoLog.Storage
 
   def send_error(%Error{} = error, config) do
+    config = put_dynamic_tags(config)
+
     with {:ok, %Error{} = error} <- maybe_call_before_send(error, config.before_send),
          :ok <- maybe_dedupe(error, config) do
       do_send_error(error, config)
@@ -92,5 +94,11 @@ defmodule DiscoLog.Client do
     :before_send must be an anonymous function or a {module, function} tuple, got: \
     #{inspect(other)}\
     """
+  end
+
+  defp put_dynamic_tags(config) do
+    update_in(config, [:discord_config, Access.key!(:occurrences_channel_tags)], fn _ ->
+      Storage.get_tags(config.supervisor_name)
+    end)
   end
 end

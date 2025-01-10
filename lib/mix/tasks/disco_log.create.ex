@@ -46,7 +46,6 @@ defmodule Mix.Tasks.DiscoLog.Create do
         guild_id: "#{config.guild_id}",
         category_id: "#{category["id"]}",
         occurrences_channel_id: "#{occurrence["id"]}",
-        occurrences_channel_tags: %{#{Enum.map_join(occurrence["available_tags"], ", ", fn tag -> "\"#{tag["name"]}\" => \"#{tag["id"]}\"" end)}},
         info_channel_id: "#{info["id"]}",
         error_channel_id: "#{error["id"]}"
       """)

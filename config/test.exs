@@ -7,12 +7,6 @@ config :disco_log,
   guild_id: "",
   category_id: "",
   occurrences_channel_id: "",
-  occurrences_channel_tags: %{
-    "plug" => "",
-    "phoenix" => "",
-    "liveview" => "",
-    "oban" => ""
-  },
   info_channel_id: "",
   error_channel_id: "",
   discord: DiscoLog.DiscordMock,

@@ -8,7 +8,6 @@ defmodule DiscoLog.Test.Case do
             guild_id: "guild_id",
             category_id: "category_id",
             occurrences_channel_id: "occurences_channel_id",
-            occurrences_channel_tags: %{},
             info_channel_id: "info_channel_id",
             error_channel_id: "error_channel_id",
             discord: DiscoLog.DiscordMock,
@@ -76,7 +75,6 @@ defmodule DiscoLog.Test.Case do
         guild_id: "guild_id",
         category_id: "category_id",
         occurrences_channel_id: "occurences_channel_id",
-        occurrences_channel_tags: %{},
         info_channel_id: "info_channel_id",
         error_channel_id: "error_channel_id",
         discord: DiscoLog.DiscordMock,
@@ -85,7 +83,9 @@ defmodule DiscoLog.Test.Case do
       |> Keyword.merge(Map.fetch!(context, :config))
       |> DiscoLog.Config.validate!()
 
-    Mox.stub(DiscoLog.DiscordMock, :list_occurrence_threads, fn _, _ -> [] end)
+    DiscoLog.DiscordMock
+    |> Mox.stub(:list_occurrence_threads, fn _, _ -> [] end)
+    |> Mox.stub(:list_tags, fn _, _ -> %{} end)
 
     {:ok, _pid} = start_supervised({DiscoLog.Supervisor, config})
 
