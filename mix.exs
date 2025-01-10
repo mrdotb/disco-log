@@ -2,7 +2,7 @@ defmodule DiscoLog.MixProject do
   use Mix.Project
 
   @source_url "https://github.com/mrdotb/disco-log"
-  @version "0.8.0-rc.2"
+  @version "1.0.0-rc.0"
 
   def project do
     [
