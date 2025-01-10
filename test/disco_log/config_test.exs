@@ -10,11 +10,6 @@ defmodule DiscoLog.ConfigTest do
     guild_id: "guild_id",
     category_id: "category_id",
     occurrences_channel_id: "occurrences_channel_id",
-    occurrences_channel_tags: %{
-      "plug" => "plug_tag_id",
-      "live_view" => "live_view_tag_id",
-      "oban" => "oban_tag_id"
-    },
     info_channel_id: "info_channel_id",
     error_channel_id: "error_channel_id",
     enable: true,

@@ -32,9 +32,20 @@ defmodule DiscoLog.Storage do
   def get_thread_id(name, fingerprint) do
     name
     |> DiscoLog.Registry.registry_name()
-    |> Registry.lookup(__MODULE__)
+    |> Registry.lookup({__MODULE__, :threads})
     |> case do
       [{_, %{^fingerprint => thread_id}}] -> thread_id
+      _ -> nil
+    end
+  end
+
+  @doc "Retrieve the tag id for a given tag"
+  def get_tags(name) do
+    name
+    |> DiscoLog.Registry.registry_name()
+    |> Registry.lookup({__MODULE__, :tags})
+    |> case do
+      [{_, tags}] -> tags
       _ -> nil
     end
   end
@@ -59,18 +70,22 @@ defmodule DiscoLog.Storage do
         :restore,
         %__MODULE__{discord_config: config, discord: discord, registry: registry} = state
       ) do
-    Registry.update_value(registry, __MODULE__, fn _ ->
+    existing_threads =
       config
       |> discord.list_occurrence_threads(config.occurrences_channel_id)
       |> Map.new()
-    end)
+
+    existing_tags = discord.list_tags(config, config.occurrences_channel_id)
+
+    Registry.register(registry, {__MODULE__, :threads}, existing_threads)
+    Registry.register(registry, {__MODULE__, :tags}, existing_tags)
 
     {:noreply, state}
   end
 
   @impl GenServer
   def handle_call({:add_thread_id, fingerprint, thread_id}, _from, state) do
-    Registry.update_value(state.registry, __MODULE__, fn threads ->
+    Registry.update_value(state.registry, {__MODULE__, :threads}, fn threads ->
       Map.put(threads, fingerprint, thread_id)
     end)
 

@@ -131,6 +131,16 @@ defmodule DiscoLog.Discord.Client do
     end
   end
 
+  def get_channel(config, channel_id) do
+    case Req.get!(client(config), url: "/channels/#{channel_id}") do
+      %Req.Response{status: 200, body: body} ->
+        {:ok, body}
+
+      _ ->
+        {:error, "Failed to get channel"}
+    end
+  end
+
   def client(config) do
     Req.new(
       base_url: @base_url,

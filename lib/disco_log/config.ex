@@ -27,11 +27,6 @@ defmodule DiscoLog.Config do
       required: true,
       doc: "Forum channel ID for error occurrences"
     ],
-    occurrences_channel_tags: [
-      type: {:map, :string, :string},
-      required: true,
-      doc: "Map with IDs for \"plug\", \"live_view\" and \"oban\" tags"
-    ],
     info_channel_id: [
       type: :string,
       required: true,

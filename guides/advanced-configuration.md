@@ -31,11 +31,6 @@ config :my_app, DiscoLog,
     token: "server_A_secret_token"
     category_id: "1234567891011121314",
     occurrences_channel_id: "1234567891011121314",
-    occurrences_channel_tags: %{
-      "plug" => "1234567891011121314",
-      "live_view" => "1234567891011121314",
-      "oban" => "1234567891011121314"
-    },
     info_channel_id: "1234567891011121314",
     error_channel_id: "1234567891011121314",
     supervisor_name: MyApp.DiscoLog.ServerA
@@ -45,11 +40,6 @@ config :my_app, DiscoLog,
     token: "server_B_secret_token"
     category_id: "9876543210123456789",
     occurrences_channel_id: "9876543210123456789",
-    occurrences_channel_tags: %{
-      "plug" => "9876543210123456789",
-      "live_view" => "9876543210123456789",
-      "oban" => "9876543210123456789"
-    },
     info_channel_id: "9876543210123456789",
     error_channel_id: "9876543210123456789",
     supervisor_name: MyApp.DiscoLog.ServerB

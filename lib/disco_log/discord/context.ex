@@ -67,6 +67,13 @@ defmodule DiscoLog.Discord.Context do
     end
   end
 
+  def list_tags(config, occurrences_channel_id) do
+    {:ok, response} =
+      Discord.Client.get_channel(config, occurrences_channel_id)
+
+    for %{"id" => id, "name" => name} <- response["available_tags"], into: %{}, do: {name, id}
+  end
+
   defp prepare_occurrence_thread_fields(config, error) do
     [
       payload_json:
