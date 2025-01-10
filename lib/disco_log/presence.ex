@@ -162,6 +162,9 @@ defmodule DiscoLog.Presence do
       {:error, _conn, %Mint.WebSocket.UpgradeFailureError{} = error} ->
         {:stop, {:shutdown, error}, state}
 
+      {:error, _conn, %Mint.TransportError{reason: :closed} = error} ->
+        {:stop, {:shutdown, error}, state}
+
       other ->
         {:stop, other, state}
     end
@@ -170,6 +173,7 @@ defmodule DiscoLog.Presence do
   @impl GenServer
   def terminate({:shutdown, {:closed_by_server, _}}, _state), do: :ok
   def terminate({:shutdown, :closed_by_client}, _state), do: :ok
+  def terminate({:shutdown, %Mint.TransportError{}}, _state), do: :ok
 
   def terminate(_other, %__MODULE__{websocket_client: %{state: :open, websocket: %{}} = client}) do
     WebsocketClient.begin_disconnect(client, 1000, "graceful disconnect")

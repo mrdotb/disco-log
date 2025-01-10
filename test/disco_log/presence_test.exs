@@ -333,5 +333,19 @@ defmodule DiscoLog.PresenceTest do
       assert_receive {:DOWN, ^ref, :process, ^pid,
                       {:shutdown, %Mint.WebSocket.UpgradeFailureError{status_code: 520}}}
     end
+
+    test "shuts down if tcp socket closes", %{pid: pid} do
+      ref = Process.monitor(pid)
+
+      WebsocketClient.Mock
+      |> expect(:boil_message_to_frame, fn _client, {:ssl, :fake_ssl_closed} ->
+        {:error, nil, %Mint.TransportError{reason: :closed}}
+      end)
+
+      send(pid, {:ssl, :fake_ssl_closed})
+
+      assert_receive {:DOWN, ^ref, :process, ^pid,
+                      {:shutdown, %Mint.TransportError{reason: :closed}}}
+    end
   end
 end
