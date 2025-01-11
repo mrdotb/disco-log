@@ -5,7 +5,7 @@ defmodule DiscoLog.PresenceTest do
 
   alias DiscoLog.Presence
   alias DiscoLog.WebsocketClient
-  alias DiscoLog.DiscordMock
+  alias DiscoLog.Discord.API
 
   setup :verify_on_exit!
 
@@ -16,10 +16,12 @@ defmodule DiscoLog.PresenceTest do
 
   describe "start_link" do
     test "connects to gateway on startup" do
-      expect(DiscordMock, :get_gateway, fn _config -> {:ok, "wss://foo.bar"} end)
+      expect(API.Mock, :request, fn client, :get, "/gateway/bot", [] ->
+        API.Stub.request(client, :get, "/gateway/bot", [])
+      end)
 
       expect(WebsocketClient.Mock, :connect, fn host, port, path ->
-        assert "foo.bar" = host
+        assert "gateway.discord.gg" = host
         assert 443 = port
         assert "/?v=10&encoding=json" = path
         {:ok, %WebsocketClient{}}
@@ -30,8 +32,8 @@ defmodule DiscoLog.PresenceTest do
           {Presence,
            [
              supervisor_name: __MODULE__,
-             discord_config: %{token: "mytoken"},
-             discord: DiscordMock,
+             bot_token: "mytoken",
+             discord_client: %API{module: API.Mock},
              presence_status: "Status Message"
            ]}
         )
@@ -42,7 +44,6 @@ defmodule DiscoLog.PresenceTest do
 
   describe "Normal work" do
     setup do
-      stub(DiscordMock, :get_gateway, fn _config -> {:ok, "wss://gateway.discord.gg"} end)
       client = %WebsocketClient{}
       stub(WebsocketClient.Mock, :connect, fn _, _, _ -> {:ok, client} end)
 
@@ -51,8 +52,8 @@ defmodule DiscoLog.PresenceTest do
           {Presence,
            [
              supervisor_name: __MODULE__,
-             discord_config: %{token: "mytoken"},
-             discord: DiscordMock,
+             bot_token: "mytoken",
+             discord_client: %API{module: API.Mock},
              presence_status: "Status Message",
              jitter: 1
            ]}
@@ -240,8 +241,6 @@ defmodule DiscoLog.PresenceTest do
 
   describe "Fail modes" do
     setup tags do
-      stub(DiscordMock, :get_gateway, fn _config -> {:ok, "wss://gateway.discord.gg"} end)
-
       client =
         Map.merge(%{state: :open, websocket: %Mint.WebSocket{}}, Map.get(tags, :client, %{}))
 
@@ -254,8 +253,8 @@ defmodule DiscoLog.PresenceTest do
           {Presence,
            [
              supervisor_name: __MODULE__,
-             discord_config: %{token: "mytoken"},
-             discord: DiscordMock,
+             bot_token: "mytoken",
+             discord_client: %API{module: API.Mock},
              presence_status: "Status Message",
              jitter: 1
            ]}

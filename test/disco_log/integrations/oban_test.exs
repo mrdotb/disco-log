@@ -6,7 +6,7 @@ defmodule DiscoLog.ObanTest do
   @moduletag config: [supervisor_name: __MODULE__]
 
   alias DiscoLog.Integrations
-  alias DiscoLog.DiscordMock
+  alias DiscoLog.Discord.API
 
   setup :setup_supervisor
   setup :attach_oban
@@ -18,29 +18,37 @@ defmodule DiscoLog.ObanTest do
 
   test "send the exception with the oban context" do
     pid = self()
-    ref = make_ref()
 
-    expect(DiscordMock, :create_occurrence_thread, fn _config, error ->
-      send(pid, {ref, error})
+    expect(API.Mock, :request, fn client, method, url, opts ->
+      send(pid, opts)
+      API.Stub.request(client, method, url, opts)
     end)
 
     execute_job_exception()
 
-    assert_receive {^ref, error}
+    assert_receive [
+      {:path_params, [channel_id: "occurrences_channel_id"]},
+      {:form_multipart, multipart}
+    ]
 
-    assert error.kind == to_string(RuntimeError)
-    assert error.reason == "Exception!"
-    oban = error.context["oban"]
+    assert {context_json, [filename: "context.json"]} = multipart[:context]
 
-    assert oban == %{
-             "args" => %{foo: "bar"},
+    assert %{
+             "args" => %{"foo" => "bar"},
              "attempt" => 1,
              "id" => 123,
              "priority" => 1,
-             "queue" => :default,
-             "state" => :failure,
-             "worker" => :"Test.Worker"
-           }
+             "queue" => "default",
+             "state" => "failure",
+             "worker" => "Test.Worker"
+           } = Jason.decode!(context_json)["oban"]
+
+    assert %{
+             "message" => %{
+               "content" => _
+             },
+             "name" => <<_::binary-size(16)>> <> " Elixir.RuntimeError"
+           } = Jason.decode!(multipart[:payload_json])
   end
 
   defp sample_metadata do

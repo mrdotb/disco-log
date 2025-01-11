@@ -2,7 +2,6 @@ defmodule DiscoLog.ConfigTest do
   use ExUnit.Case, async: true
 
   alias DiscoLog.Config
-  alias DiscoLog.Discord
 
   @example_config [
     otp_app: :foo,
@@ -18,8 +17,7 @@ defmodule DiscoLog.ConfigTest do
     instrument_phoenix: true,
     instrument_tesla: true,
     metadata: [:foo],
-    excluded_domains: [:cowboy],
-    before_send: {Foo, [1, 2, 3]}
+    excluded_domains: [:cowboy]
   ]
 
   describe inspect(&Config.validate/1) do
@@ -27,8 +25,8 @@ defmodule DiscoLog.ConfigTest do
       assert %{} = Config.validate!(@example_config)
     end
 
-    test "adds Discord.Config" do
-      assert %{discord_config: %Discord.Config{}} = Config.validate!(@example_config)
+    test "adds discord_client" do
+      assert %{discord_client: %DiscoLog.Discord.API{}} = Config.validate!(@example_config)
     end
   end
 end

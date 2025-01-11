@@ -9,7 +9,7 @@ config :disco_log,
   occurrences_channel_id: "",
   info_channel_id: "",
   error_channel_id: "",
-  discord: DiscoLog.DiscordMock,
+  discord_client_module: DiscoLog.Discord.API.Mock,
   websocket_adapter: DiscoLog.WebsocketClient.Mock,
   enable_presence: true
 

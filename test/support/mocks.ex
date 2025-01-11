@@ -1,4 +1,4 @@
-Mox.defmock(DiscoLog.DiscordMock, for: DiscoLog.DiscordBehaviour)
+Mox.defmock(DiscoLog.Discord.API.Mock, for: DiscoLog.Discord.API)
 Mox.defmock(DiscoLog.WebsocketClient.Mock, for: DiscoLog.WebsocketClient)
 
 defmodule Env do

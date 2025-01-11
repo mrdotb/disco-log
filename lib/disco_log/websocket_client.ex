@@ -13,7 +13,7 @@ defmodule DiscoLog.WebsocketClient do
         }
 
   @callback connect(host :: Mint.Types.address(), port :: :inet.port_number(), path :: String.t()) ::
-              {:ok, t()} | {:error, Mint.Websocket.error()}
+              {:ok, t()} | {:error, Mint.WebSocket.error()}
   defdelegate connect(host, port, path), to: @adapter
 
   @callback boil_message_to_frame(client :: t(), message :: any()) ::

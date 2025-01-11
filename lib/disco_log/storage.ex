@@ -4,7 +4,9 @@ defmodule DiscoLog.Storage do
   """
   use GenServer
 
-  defstruct [:registry, :discord_config, :discord]
+  alias DiscoLog.Discord
+
+  defstruct [:registry, :discord_client, :guild_id, :occurrences_channel_id]
 
   ## Public API
 
@@ -56,8 +58,9 @@ defmodule DiscoLog.Storage do
   def init({opts, callers}) do
     state = %__MODULE__{
       registry: DiscoLog.Registry.registry_name(opts[:supervisor_name]),
-      discord_config: Keyword.fetch!(opts, :discord_config),
-      discord: Keyword.fetch!(opts, :discord)
+      discord_client: Keyword.fetch!(opts, :discord_client),
+      guild_id: Keyword.fetch!(opts, :guild_id),
+      occurrences_channel_id: Keyword.fetch!(opts, :occurrences_channel_id)
     }
 
     Process.put(:"$callers", callers)
@@ -68,14 +71,18 @@ defmodule DiscoLog.Storage do
   @impl GenServer
   def handle_continue(
         :restore,
-        %__MODULE__{discord_config: config, discord: discord, registry: registry} = state
+        %__MODULE__{
+          discord_client: discord_client,
+          guild_id: guild_id,
+          occurrences_channel_id: occurrences_channel_id,
+          registry: registry
+        } =
+          state
       ) do
-    existing_threads =
-      config
-      |> discord.list_occurrence_threads(config.occurrences_channel_id)
-      |> Map.new()
+    {:ok, existing_threads} =
+      Discord.list_occurrence_threads(discord_client, guild_id, occurrences_channel_id)
 
-    existing_tags = discord.list_tags(config, config.occurrences_channel_id)
+    {:ok, existing_tags} = Discord.list_occurrence_tags(discord_client, occurrences_channel_id)
 
     Registry.register(registry, {__MODULE__, :threads}, existing_threads)
     Registry.register(registry, {__MODULE__, :tags}, existing_tags)
