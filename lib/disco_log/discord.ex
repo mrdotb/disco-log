@@ -1,84 +1,66 @@
-defmodule DiscoLog.DiscordBehaviour do
-  @moduledoc false
-  @type config :: %DiscoLog.Discord.Config{}
-
-  @callback list_channels(config()) :: {:ok, list(any)} | {:error, String.t()}
-
-  @callback fetch_or_create_channel(
-              config(),
-              channels :: list(any),
-              channel_config :: map(),
-              parent_id :: nil | String.t()
-            ) :: {:ok, map()} | {:error, String.t()}
-
-  @callback maybe_delete_channel(config(), channels :: list(any), channel_config :: map()) ::
-              {:ok, map()} | {:error, String.t()}
-
-  @callback create_occurrence_thread(config(), error :: String.t()) ::
-              {:ok, map()} | {:error, String.t()}
-
-  @callback create_occurrence_message(config(), thread_id :: String.t(), error :: String.t()) ::
-              {:ok, map()} | {:error, String.t()}
-
-  @callback list_occurrence_threads(config(), occurrence_channel_id :: String.t()) :: list(any)
-
-  @callback delete_channel_messages(config(), channel_id :: String.t()) ::
-              list(any)
-
-  @callback create_message(
-              config(),
-              channel_id :: String.t(),
-              message :: String.t(),
-              metadata :: map()
-            ) ::
-              {:ok, map()} | {:error, String.t()}
-
-  @callback delete_threads(config(), channel_id :: String.t()) :: list(any)
-
-  @callback get_gateway(config()) :: {:ok, String.t()} | {:error, String.t()}
-
-  @callback list_tags(config(), occurence_channel_id :: String.t()) :: map()
-end
-
 defmodule DiscoLog.Discord do
-  @moduledoc """
-  Abstraction over Discord api
-  """
-  @behaviour DiscoLog.DiscordBehaviour
+  @moduledoc false
 
-  alias DiscoLog.Discord
+  alias DiscoLog.Discord.API
+  alias DiscoLog.Discord.Prepare
 
-  @impl true
-  def list_channels(config), do: Discord.Client.list_channels(config)
+  def list_occurrence_threads(discord_client, guild_id, occurrences_channel_id) do
+    case API.list_active_threads(discord_client, guild_id) do
+      {:ok, %{status: 200, body: %{"threads" => threads}}} ->
+        active_threads =
+          threads
+          |> Enum.filter(&(&1["parent_id"] == occurrences_channel_id))
+          |> Enum.map(&{Prepare.fingerprint_from_thread_name(&1["name"]), &1["id"]})
+          |> Map.new()
 
-  @impl true
-  defdelegate fetch_or_create_channel(config, channels, channel_config, parent_id \\ nil),
-    to: Discord.Context
+        {:ok, active_threads}
 
-  @impl true
-  defdelegate maybe_delete_channel(config, channels, channel_config), to: Discord.Context
+      {:ok, response} ->
+        {:error, response}
 
-  @impl true
-  defdelegate create_occurrence_thread(config, error), to: Discord.Context
+      other ->
+        other
+    end
+  end
 
-  @impl true
-  defdelegate create_occurrence_message(config, thread_id, error), to: Discord.Context
+  def list_occurrence_tags(discord_client, occurrences_channel_id) do
+    case API.get_channel(discord_client, occurrences_channel_id) do
+      {:ok, %{status: 200, body: %{"available_tags" => available_tags}}} ->
+        tags = for %{"id" => id, "name" => name} <- available_tags, into: %{}, do: {name, id}
+        {:ok, tags}
 
-  @impl true
-  defdelegate list_occurrence_threads(config, occurrence_channel_id), to: Discord.Context
+      {:ok, response} ->
+        {:error, response}
 
-  @impl true
-  defdelegate delete_channel_messages(config, channel_id), to: Discord.Context
+      error ->
+        error
+    end
+  end
 
-  @impl true
-  defdelegate create_message(config, channel_id, message, metadata), to: Discord.Context
+  def get_gateway(discord_client) do
+    case API.get_gateway(discord_client) do
+      {:ok, %{status: 200, body: %{"url" => raw_uri}}} -> URI.new(raw_uri)
+      {:ok, response} -> {:error, response}
+      error -> error
+    end
+  end
 
-  @impl true
-  defdelegate delete_threads(config, channel_id), to: Discord.Context
+  def delete_threads(discord_client, guild_id, channel_id) do
+    {:ok, %{status: 200, body: %{"threads" => threads}}} =
+      API.list_active_threads(discord_client, guild_id)
 
-  @impl true
-  defdelegate get_gateway(config), to: Discord.Context
+    threads
+    |> Enum.filter(&(&1["parent_id"] == channel_id))
+    |> Enum.map(fn %{"id" => thread_id} ->
+      {:ok, %{status: 200}} = API.delete_thread(discord_client, thread_id)
+    end)
+  end
 
-  @impl true
-  defdelegate list_tags(config, occurence_channel_id), to: Discord.Context
+  def delete_channel_messages(discord_client, channel_id) do
+    {:ok, %{status: 200, body: messages}} = API.get_channel_messages(discord_client, channel_id)
+
+    for %{"id" => message_id} <- messages do
+      API.delete_message(discord_client, channel_id, message_id)
+    end
+  end
 end

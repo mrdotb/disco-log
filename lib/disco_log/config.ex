@@ -1,6 +1,4 @@
 defmodule DiscoLog.Config do
-  alias DiscoLog.Discord
-
   @configuration_schema [
     otp_app: [
       type: :atom,
@@ -50,7 +48,7 @@ defmodule DiscoLog.Config do
     enable_discord_log: [
       type: :boolean,
       default: false,
-      doc: "Logs requests to Discord API?"
+      doc: "Log requests to Discord API?"
     ],
     enable_presence: [
       type: :boolean,
@@ -82,15 +80,9 @@ defmodule DiscoLog.Config do
       default: [:cowboy, :bandit],
       doc: "Logs with domains from this list will be ignored"
     ],
-    before_send: [
-      type: {:or, [nil, :mod_arg, {:fun, 1}]},
-      default: nil,
-      doc:
-        "This callback will be called with error or {message, metadata} tuple as argument before it is sent"
-    ],
-    discord: [
+    discord_client_module: [
       type: :atom,
-      default: DiscoLog.Discord,
+      default: DiscoLog.Discord.API.Client,
       doc: "Discord client to use"
     ],
     supervisor_name: [
@@ -129,7 +121,7 @@ defmodule DiscoLog.Config do
   @compiled_schema NimbleOptions.new!(@configuration_schema)
 
   @moduledoc """
-  Configuration related module for DiscoLog.
+  DiscoLog configuration
 
   ## Configuration Schema
 
@@ -166,9 +158,9 @@ defmodule DiscoLog.Config do
   """
   @spec validate(options :: keyword() | map()) ::
           {:ok, config()} | {:error, NimbleOptions.ValidationError.t()}
-  def validate(%{discord_config: _} = config) do
+  def validate(%{discord_client: _} = config) do
     config
-    |> Map.delete(:discord_config)
+    |> Map.delete(:discord_client)
     |> validate()
   end
 
@@ -179,7 +171,8 @@ defmodule DiscoLog.Config do
         validated
         |> Map.new()
         |> then(fn config ->
-          Map.put(config, :discord_config, Discord.Config.new(config))
+          client = config.discord_client_module.client(config.token)
+          Map.put(config, :discord_client, %{client | log?: config.enable_discord_log})
         end)
 
       {:ok, config}

@@ -8,12 +8,8 @@ defmodule DiscoLog.ApplicationTest do
   setup_all :set_mox_global
 
   setup_all do
-    DiscoLog.DiscordMock
-    |> Mox.stub(:list_occurrence_threads, fn _, _ -> [] end)
-    |> Mox.stub(:list_tags, fn _, _ -> %{} end)
-    |> Mox.stub(:get_gateway, fn _ -> {:ok, "wss://example.com"} end)
-
-    Mox.stub(DiscoLog.WebsocketClient.Mock, :connect, fn _, _, _ -> {:ok, %WebsocketClient{}} end)
+    stub_with(DiscoLog.Discord.API.Mock, DiscoLog.Discord.API.Stub)
+    stub(DiscoLog.WebsocketClient.Mock, :connect, fn _, _, _ -> {:ok, %WebsocketClient{}} end)
 
     Application.put_env(:disco_log, :enable, true)
     Application.stop(:disco_log)

@@ -2,25 +2,33 @@ defmodule DiscoLog.Test.Case do
   @moduledoc false
   use ExUnit.CaseTemplate
 
-  @config DiscoLog.Config.validate!(
-            otp_app: :disco_log,
-            token: "mytoken",
-            guild_id: "guild_id",
-            category_id: "category_id",
-            occurrences_channel_id: "occurences_channel_id",
-            info_channel_id: "info_channel_id",
-            error_channel_id: "error_channel_id",
-            discord: DiscoLog.DiscordMock,
-            enable_presence: false,
-            enable_go_to_repo: true,
-            go_to_repo_top_modules: ["DiscoLog"],
-            repo_url: "https://github.com/mrdotb/disco-log/blob",
-            git_sha: "main"
-          )
+  @config [
+    otp_app: :disco_log,
+    token: "mytoken",
+    guild_id: "guild_id",
+    category_id: "category_id",
+    occurrences_channel_id: "occurrences_channel_id",
+    info_channel_id: "info_channel_id",
+    error_channel_id: "error_channel_id",
+    discord_client_module: DiscoLog.Discord.API.Mock,
+    enable_presence: false,
+    enable_go_to_repo: true,
+    go_to_repo_top_modules: ["DiscoLog"],
+    repo_url: "https://github.com/mrdotb/disco-log/blob",
+    git_sha: "main"
+  ]
 
   using do
     quote do
       import DiscoLog.Test.Case
+
+      setup tags do
+        if tags[:async] do
+          Mox.stub_with(DiscoLog.Discord.API.Mock, DiscoLog.Discord.API.Stub)
+        end
+
+        :ok
+      end
     end
   end
 
@@ -31,10 +39,10 @@ defmodule DiscoLog.Test.Case do
     fun.()
   rescue
     exception ->
-      DiscoLog.Error.new(exception, __STACKTRACE__, %{}, @config)
+      DiscoLog.Error.new(exception, __STACKTRACE__, %{}, DiscoLog.Config.validate!(@config))
   catch
     kind, reason ->
-      DiscoLog.Error.new({kind, reason}, __STACKTRACE__, %{}, @config)
+      DiscoLog.Error.new({kind, reason}, __STACKTRACE__, %{}, DiscoLog.Config.validate!(@config))
   end
 
   @doc """
@@ -74,10 +82,10 @@ defmodule DiscoLog.Test.Case do
         token: "mytoken",
         guild_id: "guild_id",
         category_id: "category_id",
-        occurrences_channel_id: "occurences_channel_id",
+        occurrences_channel_id: "occurrences_channel_id",
         info_channel_id: "info_channel_id",
         error_channel_id: "error_channel_id",
-        discord: DiscoLog.DiscordMock,
+        discord_client_module: DiscoLog.Discord.API.Mock,
         enable_presence: false
       ]
       |> Keyword.merge(Map.fetch!(context, :config))
@@ -86,11 +94,6 @@ defmodule DiscoLog.Test.Case do
     Mox.stub(DiscoLog.WebsocketClient.Mock, :connect, fn _, _, _ ->
       {:ok, struct(DiscoLog.WebsocketClient, %{})}
     end)
-
-    DiscoLog.DiscordMock
-    |> Mox.stub(:get_gateway, fn _config -> {:ok, "wss://gateway.discord.gg"} end)
-    |> Mox.stub(:list_occurrence_threads, fn _, _ -> [] end)
-    |> Mox.stub(:list_tags, fn _, _ -> %{} end)
 
     {:ok, _pid} = start_supervised({DiscoLog.Supervisor, config})
 
@@ -121,7 +124,7 @@ defmodule DiscoLog.Test.Case do
                NimbleOwnership.fetch_owner(
                  {:global, Mox.Server},
                  [self() | callers],
-                 DiscoLog.DiscordMock
+                 DiscoLog.Discord.API.Mock
                )
 
              if owner_pid == test_pid, do: event, else: :stop

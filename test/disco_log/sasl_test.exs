@@ -4,7 +4,7 @@ defmodule DiscoLog.SaslTest do
 
   import Mox
   require Logger
-  alias DiscoLog.DiscordMock
+  alias DiscoLog.Discord.API
 
   @moduletag config: [supervisor_name: __MODULE__]
 
@@ -20,6 +20,13 @@ defmodule DiscoLog.SaslTest do
     end)
   end
 
+  setup :set_mox_global
+
+  setup do
+    stub_with(API.Mock, API.Stub)
+    :ok
+  end
+
   setup :setup_supervisor
 
   setup %{config: config} do
@@ -28,16 +35,15 @@ defmodule DiscoLog.SaslTest do
     on_exit(fn -> :logger.remove_handler(__MODULE__) end)
   end
 
-  setup :set_mox_global
   setup :verify_on_exit!
 
   test "reports crashes on c:GenServer.init/1" do
     pid = self()
     ref = make_ref()
 
-    DiscordMock
-    |> expect(:create_occurrence_thread, fn _config, error ->
-      send(pid, {ref, error})
+    expect(API.Mock, :request, fn client, method, url, opts ->
+      send(pid, opts)
+      API.Stub.request(client, method, url, opts)
     end)
 
     defmodule CrashingGenServerInInit do
@@ -47,9 +53,6 @@ defmodule DiscoLog.SaslTest do
 
     assert {:error, _reason_and_stacktrace} = GenServer.start(CrashingGenServerInInit, :no_arg)
 
-    # Pattern match the type cause we receive some other garbage messages
-    assert_receive {^ref, %DiscoLog.Error{} = error}
-    assert error.kind == to_string(RuntimeError)
-    assert error.reason == "oops"
+    assert_receive [{:path_params, [channel_id: "occurrences_channel_id"]} | _]
   end
 end

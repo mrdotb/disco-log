@@ -33,8 +33,9 @@ defmodule DiscoLog.Supervisor do
         {Registry, keys: :unique, name: DiscoLog.Registry.registry_name(config.supervisor_name)},
         {Storage,
          supervisor_name: config.supervisor_name,
-         discord_config: config.discord_config,
-         discord: config.discord},
+         discord_client: config.discord_client,
+         guild_id: config.guild_id,
+         occurrences_channel_id: config.occurrences_channel_id},
         {Dedupe, supervisor_name: config.supervisor_name}
       ] ++ maybe_presence(config)
 
@@ -48,8 +49,8 @@ defmodule DiscoLog.Supervisor do
       [
         {Presence,
          supervisor_name: config.supervisor_name,
-         discord_config: config.discord_config,
-         discord: config.discord,
+         bot_token: config.token,
+         discord_client: config.discord_client,
          presence_status: config.presence_status}
       ]
     else

@@ -4,7 +4,7 @@ defmodule DiscoLog.StorageTest do
   import Mox
 
   alias DiscoLog.Storage
-  alias DiscoLog.DiscordMock
+  alias DiscoLog.Discord.API
 
   setup :verify_on_exit!
 
@@ -15,16 +15,15 @@ defmodule DiscoLog.StorageTest do
 
   describe "start_link" do
     test "loads occurences and tags on startup" do
-      DiscordMock
-      |> expect(:list_occurrence_threads, fn _config, channel_id ->
-        assert channel_id == "channel_id"
+      API.Mock
+      |> expect(:request, 2, fn
+        client, :get, "/guilds/:guild_id/threads/active", opts ->
+          assert [path_params: [guild_id: "guild_id"]] = opts
+          API.Stub.request(client, :get, "/guilds/:guild_id/threads/active", [])
 
-        [{"fingerprint", "thread_id"}]
-      end)
-      |> expect(:list_tags, fn _config, channel_id ->
-        assert channel_id == "channel_id"
-
-        %{"oban" => "oban_tag_id"}
+        client, :get, "/channels/:channel_id", opts ->
+          assert [path_params: [channel_id: "stub_occurrences_channel_id"]] = opts
+          API.Stub.request(client, :get, "/channels/:channel_id", [])
       end)
 
       pid =
@@ -32,34 +31,39 @@ defmodule DiscoLog.StorageTest do
           {Storage,
            [
              supervisor_name: __MODULE__,
-             discord_config: %{token: "mytoken", occurrences_channel_id: "channel_id"},
-             discord: DiscordMock
+             occurrences_channel_id: "stub_occurrences_channel_id",
+             guild_id: "guild_id",
+             discord_client: %API{module: API.Mock}
            ]}
         )
 
       _ = :sys.get_status(pid)
 
-      assert [{pid, %{"fingerprint" => "thread_id"}}] ==
+      assert [{pid, %{"STUBFINGERPRINT!" => "stub_thread_id"}}] ==
                Registry.lookup(__MODULE__.Registry, {Storage, :threads})
 
-      assert [{pid, %{"oban" => "oban_tag_id"}}] ==
+      assert [
+               {pid,
+                %{
+                  "oban" => "stub_oban_tag_id",
+                  "live_view" => "stub_live_view_tag_id",
+                  "plug" => "stub_plug_tag_id"
+                }}
+             ] ==
                Registry.lookup(__MODULE__.Registry, {Storage, :tags})
     end
   end
 
   describe inspect(&Storage.get_thread_id/2) do
     setup do
-      DiscordMock
-      |> stub(:list_occurrence_threads, fn _, _ -> [{"fingerprint", "thread_id"}] end)
-      |> stub(:list_tags, fn _, _ -> %{"oban" => "oban_tag_id"} end)
-
       pid =
         start_link_supervised!(
           {Storage,
            [
              supervisor_name: __MODULE__,
-             discord_config: %{token: "mytoken", occurrences_channel_id: "channel_id"},
-             discord: DiscordMock
+             occurrences_channel_id: "stub_occurrences_channel_id",
+             guild_id: "guild_id",
+             discord_client: %API{module: API.Mock}
            ]}
         )
 
@@ -68,7 +72,7 @@ defmodule DiscoLog.StorageTest do
     end
 
     test "thread id exists" do
-      assert "thread_id" = Storage.get_thread_id(__MODULE__, "fingerprint")
+      assert "stub_thread_id" = Storage.get_thread_id(__MODULE__, "STUBFINGERPRINT!")
     end
 
     test "nil if missing" do
@@ -78,17 +82,14 @@ defmodule DiscoLog.StorageTest do
 
   describe inspect(&Storage.add_thread_id/3) do
     setup do
-      DiscordMock
-      |> stub(:list_occurrence_threads, fn _, _ -> [{"fingerprint", "thread_id"}] end)
-      |> stub(:list_tags, fn _, _ -> %{"oban" => "oban_tag_id"} end)
-
       pid =
         start_link_supervised!(
           {Storage,
            [
              supervisor_name: __MODULE__,
-             discord_config: %{token: "mytoken", occurrences_channel_id: "channel_id"},
-             discord: DiscordMock
+             occurrences_channel_id: "stub_occurrences_channel_id",
+             guild_id: "guild_id",
+             discord_client: %API{module: API.Mock}
            ]}
         )
 
@@ -118,17 +119,14 @@ defmodule DiscoLog.StorageTest do
 
   describe inspect(&Storage.get_tags/1) do
     setup do
-      DiscordMock
-      |> stub(:list_occurrence_threads, fn _, _ -> [{"fingerprint", "thread_id"}] end)
-      |> stub(:list_tags, fn _, _ -> %{"oban" => "oban_tag_id"} end)
-
       pid =
         start_link_supervised!(
           {Storage,
            [
              supervisor_name: __MODULE__,
-             discord_config: %{token: "mytoken", occurrences_channel_id: "channel_id"},
-             discord: DiscordMock
+             occurrences_channel_id: "stub_occurrences_channel_id",
+             guild_id: "guild_id",
+             discord_client: %API{module: API.Mock}
            ]}
         )
 
@@ -137,7 +135,11 @@ defmodule DiscoLog.StorageTest do
     end
 
     test "retrieves all tags" do
-      assert %{"oban" => "oban_tag_id"} == Storage.get_tags(__MODULE__)
+      assert %{
+               "oban" => "stub_oban_tag_id",
+               "live_view" => "stub_live_view_tag_id",
+               "plug" => "stub_plug_tag_id"
+             } == Storage.get_tags(__MODULE__)
     end
   end
 end

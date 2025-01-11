@@ -3,7 +3,7 @@ defmodule DiscoLog.LoggerHandlerTest do
 
   import Mox
   require Logger
-  alias DiscoLog.DiscordMock
+  alias DiscoLog.Discord.API
 
   @moduletag config: [supervisor_name: __MODULE__]
 
@@ -21,61 +21,77 @@ defmodule DiscoLog.LoggerHandlerTest do
     test "info log string type" do
       pid = self()
 
-      expect(DiscordMock, :create_message, fn _config, channel_id, message, metadata ->
-        send(pid, {channel_id, message, metadata})
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       Logger.info("Info message")
 
-      assert_receive {"info_channel_id", "Info message", %{}}
+      assert_receive [{:path_params, [channel_id: "info_channel_id"]}, {:form_multipart, body}]
+      assert %{payload_json: %{content: "Info message"}} = decode_body(body)
     end
 
     test "info log report type map" do
       pid = self()
 
-      expect(DiscordMock, :create_message, fn _config, channel_id, message, metadata ->
-        send(pid, {channel_id, message, metadata})
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       Logger.info(%{message: "Info message"})
 
-      assert_receive {"info_channel_id", %{message: "Info message"}, %{}}
+      assert_receive [{:path_params, [channel_id: "info_channel_id"]}, {:form_multipart, body}]
+
+      assert %{message: {%{message: "Info message"}, [filename: "message.json"]}} =
+               decode_body(body)
     end
 
     test "info log report type keyword" do
       pid = self()
 
-      expect(DiscordMock, :create_message, fn _config, channel_id, message, metadata ->
-        send(pid, {channel_id, message, metadata})
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       Logger.info(message: "Info message")
 
-      assert_receive {"info_channel_id", %{message: "Info message"}, %{}}
+      assert_receive [{:path_params, [channel_id: "info_channel_id"]}, {:form_multipart, body}]
+
+      assert %{message: {%{message: "Info message"}, [filename: "message.json"]}} =
+               decode_body(body)
     end
 
     test "info log report type struct" do
       pid = self()
 
-      expect(DiscordMock, :create_message, fn _config, channel_id, message, metadata ->
-        send(pid, {channel_id, message, metadata})
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       Logger.info(%Foo{})
 
-      assert_receive {"info_channel_id", %{__struct__: "Elixir.Foo", bar: nil}, %{}}
+      assert_receive [{:path_params, [channel_id: "info_channel_id"]}, {:form_multipart, body}]
+
+      assert %{message: {%{__struct__: "Elixir.Foo", bar: "nil"}, [filename: "message.json"]}} =
+               decode_body(body)
     end
 
     test "info log erlang format" do
       pid = self()
 
-      expect(DiscordMock, :create_message, fn _config, channel_id, message, metadata ->
-        send(pid, {channel_id, message, metadata})
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       :logger.info("Hello ~s", ["world"])
 
-      assert_receive {"info_channel_id", "Hello world", %{}}
+      assert_receive [{:path_params, [channel_id: "info_channel_id"]}, {:form_multipart, body}]
+      assert %{payload_json: %{content: "Hello world"}} = decode_body(body)
     end
   end
 
@@ -83,115 +99,157 @@ defmodule DiscoLog.LoggerHandlerTest do
     test "error log string type" do
       pid = self()
 
-      expect(DiscordMock, :create_message, fn _config, channel_id, message, metadata ->
-        send(pid, {channel_id, message, metadata})
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       Logger.error("Error message")
 
-      assert_receive {"error_channel_id", "Error message", %{}}
+      assert_receive [{:path_params, [channel_id: "error_channel_id"]}, {:form_multipart, body}]
+      assert %{payload_json: %{content: "Error message"}} = decode_body(body)
     end
 
     test "error log report type struct" do
       pid = self()
 
-      expect(DiscordMock, :create_message, fn _config, channel_id, message, metadata ->
-        send(pid, {channel_id, message, metadata})
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       Logger.error(%Foo{})
 
-      assert_receive {"error_channel_id", %{__struct__: "Elixir.Foo", bar: nil}, %{}}
+      assert_receive [{:path_params, [channel_id: "error_channel_id"]}, {:form_multipart, body}]
+
+      assert %{message: {%{__struct__: "Elixir.Foo", bar: "nil"}, [filename: "message.json"]}} =
+               decode_body(body)
     end
 
     test "error log report type map" do
       pid = self()
 
-      expect(DiscordMock, :create_message, fn _config, channel_id, message, metadata ->
-        send(pid, {channel_id, message, metadata})
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       Logger.error(%{message: "Error message"})
 
-      assert_receive {"error_channel_id", %{message: "Error message"}, %{}}
+      assert_receive [{:path_params, [channel_id: "error_channel_id"]}, {:form_multipart, body}]
+
+      assert %{message: {%{message: "Error message"}, [filename: "message.json"]}} =
+               decode_body(body)
     end
 
     test "error log report type keyword" do
       pid = self()
 
-      expect(DiscordMock, :create_message, fn _config, channel_id, message, metadata ->
-        send(pid, {channel_id, message, metadata})
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       Logger.error(message: "Error message")
 
-      assert_receive {"error_channel_id", [message: "Error message"], %{}}
+      assert_receive [{:path_params, [channel_id: "error_channel_id"]}, {:form_multipart, body}]
+
+      assert %{message: {%{message: "Error message"}, [filename: "message.json"]}} =
+               decode_body(body)
     end
 
     test "error log erlang format" do
       pid = self()
 
-      expect(DiscordMock, :create_message, fn _config, channel_id, message, metadata ->
-        send(pid, {channel_id, message, metadata})
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       :logger.error("Hello ~s", ["world"])
 
-      assert_receive {"error_channel_id", "Hello world", %{}}
+      assert_receive [{:path_params, [channel_id: "error_channel_id"]}, {:form_multipart, body}]
+      assert %{payload_json: %{content: "Hello world"}} = decode_body(body)
     end
 
     test "error log IO data" do
       pid = self()
 
-      expect(DiscordMock, :create_message, fn _config, channel_id, message, metadata ->
-        send(pid, {channel_id, message, metadata})
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       Logger.error(["Hello", " ", "world"])
 
-      assert_receive {"error_channel_id", "Hello world", %{}}
+      assert_receive [{:path_params, [channel_id: "error_channel_id"]}, {:form_multipart, body}]
+      assert %{payload_json: %{content: "Hello world"}} = decode_body(body)
     end
 
     test "a logged raised exception is" do
       pid = self()
-      ref = make_ref()
 
-      expect(DiscordMock, :create_occurrence_thread, fn _config, error ->
-        send(pid, {ref, error})
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       Task.start(fn ->
         raise "Unique Error"
       end)
 
-      assert_receive {^ref, error}
-      assert error.kind == to_string(RuntimeError)
-      assert error.reason == "Unique Error"
+      assert_receive [
+        {:path_params, [channel_id: "occurrences_channel_id"]},
+        {:form_multipart, body}
+      ]
+
+      assert %{
+               payload_json: %{
+                 applied_tags: [],
+                 message: %{content: message},
+                 name: thread_name
+               }
+             } = decode_body(body)
+
+      assert message =~ "Unique Error"
+      assert thread_name =~ "Elixir.RuntimeError"
     end
 
     test "badarith error" do
       pid = self()
-      ref = make_ref()
 
-      expect(DiscordMock, :create_occurrence_thread, fn _config, error ->
-        send(pid, {ref, error})
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       Task.start(fn ->
         1 + to_string(1)
       end)
 
-      assert_receive {^ref, error}
-      assert error.kind == to_string(ArithmeticError)
-      assert error.reason == "bad argument in arithmetic expression"
+      assert_receive [
+        {:path_params, [channel_id: "occurrences_channel_id"]},
+        {:form_multipart, body}
+      ]
+
+      assert %{
+               payload_json: %{
+                 applied_tags: [],
+                 message: %{content: message},
+                 name: thread_name
+               }
+             } = decode_body(body)
+
+      assert message =~ "bad argument in arithmetic expression"
+      assert thread_name =~ "Elixir.ArithmeticError"
     end
 
     test "undefined function errors" do
       pid = self()
-      ref = make_ref()
 
-      expect(DiscordMock, :create_occurrence_thread, fn _config, error ->
-        send(pid, {ref, error})
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       # This function does not exist and will raise when called
@@ -201,26 +259,50 @@ defmodule DiscoLog.LoggerHandlerTest do
         apply(m, f, a)
       end)
 
-      assert_receive {^ref, error}
-      assert error.kind == to_string(UndefinedFunctionError)
-      assert error.reason =~ "is undefined or private"
+      assert_receive [
+        {:path_params, [channel_id: "occurrences_channel_id"]},
+        {:form_multipart, body}
+      ]
+
+      assert %{
+               payload_json: %{
+                 applied_tags: [],
+                 message: %{content: message},
+                 name: thread_name
+               }
+             } = decode_body(body)
+
+      assert message =~ "function DiscoLog.invalid_fun/0 is undefined or private"
+      assert thread_name =~ "Elixir.UndefinedFunctionError"
     end
 
     test "throws" do
       pid = self()
-      ref = make_ref()
 
-      expect(DiscordMock, :create_occurrence_thread, fn _config, error ->
-        send(pid, {ref, error})
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       Task.start(fn ->
         throw("This is a test")
       end)
 
-      assert_receive {^ref, error}
-      assert error.kind == "genserver"
-      assert error.reason =~ ":nocatch"
+      assert_receive [
+        {:path_params, [channel_id: "occurrences_channel_id"]},
+        {:form_multipart, body}
+      ]
+
+      assert %{
+               payload_json: %{
+                 applied_tags: [],
+                 message: %{content: message},
+                 name: thread_name
+               }
+             } = decode_body(body)
+
+      assert message =~ "{:nocatch, \"This is a test\"}"
+      assert thread_name =~ "genserver"
     end
   end
 
@@ -232,74 +314,108 @@ defmodule DiscoLog.LoggerHandlerTest do
     test "a GenServer raising an error is reported",
          %{test_genserver: test_genserver} do
       pid = self()
-      ref = make_ref()
 
-      DiscordMock
+      API.Mock
       |> allow(pid, test_genserver)
-      |> expect(:create_occurrence_thread, fn _config, error ->
-        send(pid, {ref, error})
+      |> expect(:request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       run_and_catch_exit(test_genserver, fn -> Keyword.fetch!([], :foo) end)
 
-      assert_receive {^ref, error}
-      assert error.kind == to_string(KeyError)
-      assert error.reason == "key :foo not found in: []"
+      assert_receive [
+        {:path_params, [channel_id: "occurrences_channel_id"]},
+        {:form_multipart, body}
+      ]
+
+      assert %{
+               payload_json: %{
+                 applied_tags: [],
+                 message: %{content: message},
+                 name: thread_name
+               }
+             } = decode_body(body)
+
+      assert message =~ "key :foo not found in: []"
+      assert thread_name =~ "Elixir.KeyError"
     end
 
     test "a GenServer throw is reported", %{test_genserver: test_genserver} do
       pid = self()
-      ref = make_ref()
 
-      DiscordMock
+      API.Mock
       |> allow(pid, test_genserver)
-      |> expect(:create_occurrence_thread, fn _config, error ->
-        send(pid, {ref, error})
+      |> expect(:request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       run_and_catch_exit(test_genserver, fn ->
         throw(:testing_throw)
       end)
 
-      assert_receive {^ref, error}
-      assert error.kind == "genserver"
-      assert error.reason =~ "testing_throw"
-      assert error.source_line == "nofile"
-      assert error.source_function == "nofunction"
-      assert error.context.extra_info_from_message.last_message =~ "GenServer throw is reported"
+      assert_receive [
+        {:path_params, [channel_id: "occurrences_channel_id"]},
+        {:form_multipart, body}
+      ]
+
+      assert %{
+               payload_json: %{
+                 applied_tags: [],
+                 message: %{content: message},
+                 name: thread_name
+               }
+             } = decode_body(body)
+
+      assert message =~ "** (stop) bad return value: :testing_throw"
+      assert message =~ "nofile"
+      assert message =~ "nofunction"
+      assert thread_name =~ "genserver"
     end
 
     test "abnormal GenServer exit is reported", %{test_genserver: test_genserver} do
       pid = self()
-      ref = make_ref()
 
-      DiscordMock
+      API.Mock
       |> allow(pid, test_genserver)
-      |> expect(:create_occurrence_thread, fn _config, error ->
-        send(pid, {ref, error})
+      |> expect(:request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       run_and_catch_exit(test_genserver, fn ->
         {:stop, :bad_exit, :no_state}
       end)
 
-      assert_receive {^ref, error}
-      assert error.kind == "genserver"
-      assert error.reason =~ "bad_exit"
-      assert error.source_line == "nofile"
-      assert error.source_function == "nofunction"
-      assert error.context.extra_info_from_message.last_message =~ "GenServer exit is reported"
+      assert_receive [
+        {:path_params, [channel_id: "occurrences_channel_id"]},
+        {:form_multipart, body}
+      ]
+
+      assert %{
+               payload_json: %{
+                 applied_tags: [],
+                 message: %{content: message},
+                 name: thread_name
+               }
+             } = decode_body(body)
+
+      assert message =~ "** (stop) :bad_exit"
+      assert message =~ "nofile"
+      assert message =~ "nofunction"
+      assert thread_name =~ "genserver"
     end
 
     test "an exit while calling another GenServer is reported nicely",
          %{test_genserver: test_genserver} do
-      test_pid = self()
-      ref = make_ref()
+      pid = self()
 
-      DiscordMock
-      |> allow(test_pid, test_genserver)
-      |> expect(:create_occurrence_thread, fn _config, error ->
-        send(test_pid, {ref, error})
+      API.Mock
+      |> allow(pid, test_genserver)
+      |> expect(:request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       # Get a PID and make sure it's done before using it.
@@ -310,23 +426,37 @@ defmodule DiscoLog.LoggerHandlerTest do
         GenServer.call(pid, :ping)
       end)
 
-      assert_receive {^ref, error}
-      assert error.kind == "genserver_call"
-      assert error.reason == "noproc"
+      assert_receive [
+        {:path_params, [channel_id: "occurrences_channel_id"]},
+        {:form_multipart, body}
+      ]
 
-      assert error.context.extra_reason =~
+      assert %{
+               payload_json: %{
+                 applied_tags: [],
+                 message: %{content: message},
+                 name: thread_name
+               },
+               context: {%{extra_reason: extra_reason}, _}
+             } = decode_body(body)
+
+      assert message =~ "genserver_call"
+      assert message =~ "noproc"
+      assert thread_name =~ "genserver_call"
+
+      assert extra_reason =~
                "** (EXIT) no process: the process is not alive or there's no process currently associated with the given name, possibly because its application isn't started"
     end
 
     test "a timeout while calling another GenServer is reported nicely",
          %{test_genserver: test_genserver} do
       pid = self()
-      ref = make_ref()
 
-      DiscordMock
+      API.Mock
       |> allow(pid, test_genserver)
-      |> expect(:create_occurrence_thread, fn _config, error ->
-        send(pid, {ref, error})
+      |> expect(:request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       {:ok, agent} = Agent.start_link(fn -> nil end)
@@ -335,50 +465,88 @@ defmodule DiscoLog.LoggerHandlerTest do
         Agent.get(agent, & &1, 0)
       end)
 
-      assert_receive {^ref, error}
-      assert error.kind == "genserver_call"
-      assert error.reason == "timeout"
-      assert error.context.extra_reason =~ "** (EXIT) time out"
+      assert_receive [
+        {:path_params, [channel_id: "occurrences_channel_id"]},
+        {:form_multipart, body}
+      ]
+
+      assert %{
+               payload_json: %{
+                 applied_tags: [],
+                 message: %{content: message},
+                 name: thread_name
+               },
+               context: {%{extra_reason: extra_reason}, _}
+             } = decode_body(body)
+
+      assert message =~ "genserver_call"
+      assert message =~ "timeout"
+      assert thread_name =~ "genserver_call"
+      assert extra_reason =~ "** (EXIT) time out"
     end
 
     test "bad function call causing GenServer crash is reported",
          %{test_genserver: test_genserver} do
       pid = self()
-      ref = make_ref()
 
-      DiscordMock
+      API.Mock
       |> allow(pid, test_genserver)
-      |> expect(:create_occurrence_thread, fn _config, error ->
-        send(pid, {ref, error})
+      |> expect(:request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       run_and_catch_exit(test_genserver, fn ->
         raise "Hello World"
       end)
 
-      assert_receive {^ref, error}
-      assert error.kind == to_string(RuntimeError)
-      assert error.reason == "Hello World"
+      assert_receive [
+        {:path_params, [channel_id: "occurrences_channel_id"]},
+        {:form_multipart, body}
+      ]
+
+      assert %{
+               payload_json: %{
+                 applied_tags: [],
+                 message: %{content: message},
+                 name: thread_name
+               }
+             } = decode_body(body)
+
+      assert message =~ "Hello World"
+      assert thread_name =~ "Elixir.RuntimeError"
     end
 
     test "an exit with a struct is reported nicely",
          %{test_genserver: test_genserver} do
       pid = self()
-      ref = make_ref()
 
-      DiscordMock
+      API.Mock
       |> allow(pid, test_genserver)
-      |> expect(:create_occurrence_thread, fn _config, error ->
-        send(pid, {ref, error})
+      |> expect(:request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       run_and_catch_exit(test_genserver, fn ->
         {:stop, %Mint.HTTP1{}, :no_state}
       end)
 
-      assert_receive {^ref, error}
-      assert error.kind == "genserver"
-      assert error.reason =~ "** (stop) %Mint.HTTP1"
+      assert_receive [
+        {:path_params, [channel_id: "occurrences_channel_id"]},
+        {:form_multipart, body}
+      ]
+
+      assert %{
+               payload_json: %{
+                 applied_tags: [],
+                 message: %{content: message},
+                 name: thread_name
+               }
+             } = decode_body(body)
+
+      assert message =~ "** (stop) %Mint.HTTP1{"
+      assert thread_name =~ "genserver"
     end
 
     @tag config: [enable_presence: true]
@@ -387,18 +555,25 @@ defmodule DiscoLog.LoggerHandlerTest do
       test_genserver: test_genserver
     } do
       pid = self()
-      ref = make_ref()
+      ref1 = make_ref()
+      ref2 = make_ref()
 
       DiscoLog.WebsocketClient.Mock
       |> expect(:boil_message_to_frame, fn _client, {:ssl, :fake_ssl_closed} ->
         {:error, nil, %Mint.TransportError{reason: :closed}}
       end)
-      |> stub(:send_frame, fn _, _ -> {:error, :socket_closed_at_this_point} end)
 
-      DiscordMock
+      API.Mock
       |> allow(pid, test_genserver)
-      |> expect(:create_occurrence_thread, fn _config, error ->
-        send(pid, {ref, error})
+      |> expect(:request, 2, fn
+        client, method, "/channels/:channel_id/threads" = url, opts ->
+          send(pid, {ref1, opts})
+          API.Stub.request(client, method, url, opts)
+
+        # Presence will crash and restart, so we need to have gateway stubbed
+        client, method, "/gateway/bot" = url, opts ->
+          send(pid, {ref2, opts})
+          API.Stub.request(client, method, url, opts)
       end)
 
       pid =
@@ -406,23 +581,39 @@ defmodule DiscoLog.LoggerHandlerTest do
 
       send(pid, {:ssl, :fake_ssl_closed})
 
-      assert_receive {^ref, error}
-      assert error.kind == "genserver"
+      # Wait until Presence complete the crash to avoid race conditions
+      assert_receive {^ref2, _}
 
-      assert error.reason =~
-               "** (stop) {:error, nil, %Mint.TransportError{reason: :closed}}"
+      assert_receive {^ref1,
+                      [
+                        {:path_params, [channel_id: "occurrences_channel_id"]},
+                        {:form_multipart, body}
+                      ]}
 
-      assert error.context.extra_info_from_genserver.message =~
-               "GenServer %{} terminating: ** (stop)"
+      assert %{
+               payload_json: %{
+                 applied_tags: [],
+                 message: %{content: message},
+                 name: thread_name
+               },
+               context: {%{extra_info_from_genserver: %{message: extra_message}}, _}
+             } = decode_body(body)
+
+      assert message =~ "** (stop) {:error, nil, %Mint.TransportError{reason: :closed}}"
+      assert thread_name =~ "genserver"
+
+      assert extra_message =~
+               "GenServer %{} terminating: ** (stop) {:error, nil, %Mint.TransportError{reason: :closed}}"
     end
 
     test "GenServer timeout is reported", %{test_genserver: test_genserver} do
       pid = self()
-      ref = make_ref()
 
-      DiscordMock
-      |> expect(:create_occurrence_thread, fn _config, error ->
-        send(pid, {ref, error})
+      API.Mock
+      |> allow(pid, test_genserver)
+      |> expect(:request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
       end)
 
       Task.start(fn ->
@@ -433,15 +624,41 @@ defmodule DiscoLog.LoggerHandlerTest do
         )
       end)
 
-      assert_receive {^ref, error}
-      assert error.kind == "genserver_call"
-      assert error.reason == "timeout"
-      assert error.context.extra_reason =~ "exited in: GenServer.call("
-      assert error.context.extra_reason =~ "** (EXIT) time out"
+      assert_receive [
+        {:path_params, [channel_id: "occurrences_channel_id"]},
+        {:form_multipart, body}
+      ]
+
+      assert %{
+               payload_json: %{
+                 applied_tags: [],
+                 message: %{content: message},
+                 name: thread_name
+               },
+               context: {%{extra_reason: extra_reason}, _}
+             } = decode_body(body)
+
+      assert message =~ "timeout"
+      assert thread_name =~ "genserver_call"
+      assert extra_reason =~ "exited in: GenServer.call("
     end
   end
 
   defp run_and_catch_exit(test_genserver_pid, fun) do
     catch_exit(DiscoLog.TestGenServer.run(test_genserver_pid, fun))
+  end
+
+  defp decode_body(body) do
+    Map.new(body, fn
+      {k, {content, file}} -> {k, {maybe_decode(content), file}}
+      {k, v} -> {k, maybe_decode(v)}
+    end)
+  end
+
+  defp maybe_decode(binary) do
+    case Jason.decode(binary, keys: :atoms) do
+      {:ok, decoded} -> decoded
+      {:error, _} -> binary
+    end
   end
 end

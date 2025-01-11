@@ -6,7 +6,7 @@ defmodule DiscoLog.TeslaTest do
   @moduletag config: [supervisor_name: __MODULE__]
 
   alias DiscoLog.Integrations
-  alias DiscoLog.DiscordMock
+  alias DiscoLog.Discord.API
 
   setup :setup_supervisor
   setup :attach_tesla
@@ -18,19 +18,35 @@ defmodule DiscoLog.TeslaTest do
 
   test "send the exception with the tesla context" do
     pid = self()
-    ref = make_ref()
 
-    expect(DiscordMock, :create_occurrence_thread, fn _config, error ->
-      send(pid, {ref, error})
+    expect(API.Mock, :request, fn client, method, url, opts ->
+      send(pid, opts)
+      API.Stub.request(client, method, url, opts)
     end)
 
     execute_tesla_exception()
 
-    assert_receive {^ref, error}
+    assert_receive [
+      {:path_params, [channel_id: "occurrences_channel_id"]},
+      {:form_multipart, multipart}
+    ]
 
-    assert error.kind == to_string(RuntimeError)
-    assert error.reason == "Exception!"
-    assert is_map(error.context["tesla"])
+    assert {context_json, [filename: "context.json"]} = multipart[:context]
+
+    assert %{
+             "method" => "get",
+             "request_headers" => [],
+             "response_headers" => [],
+             "status" => 500,
+             "url" => "http://example.com"
+           } = Jason.decode!(context_json)["tesla"]
+
+    assert %{
+             "message" => %{
+               "content" => _
+             },
+             "name" => <<_::binary-size(16)>> <> " Elixir.RuntimeError"
+           } = Jason.decode!(multipart[:payload_json])
   end
 
   defp execute_tesla_exception do
