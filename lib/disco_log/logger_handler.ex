@@ -171,7 +171,8 @@ defmodule DiscoLog.LoggerHandler do
       _other ->
         case try_to_parse_message(chardata_message) do
           nil ->
-            error = Error.new(reason, stacktrace, context, config)
+            reason = inspect(reason)
+            error = Error.new({"genserver", reason}, stacktrace, context, config)
             Client.send_error(error, config)
 
           %{reason: reason} = parsed_message ->
@@ -293,16 +294,41 @@ defmodule DiscoLog.LoggerHandler do
   defp try_to_parse_message([
          [
            "GenServer ",
-           _inspected_pid,
+           _module,
+           " terminating"
+         ],
+         reason,
+         "\nLast message: ",
+         inspected_last_message,
+         "\nState: ",
+         inspected_state
+       ]) do
+    string_reason = reason |> :unicode.characters_to_binary() |> String.trim()
+
+    %{
+      reason: string_reason,
+      last_message: inspected_last_message,
+      message: "GenServer %{} terminating: #{string_reason}",
+      state: inspected_state
+    }
+  end
+
+  defp try_to_parse_message([
+         [
+           "GenServer ",
+           _module,
            " terminating",
-           chardata_reason,
-           "\nLast message: ",
+           reason,
+           [],
+           "\nLast message",
+           [],
+           ": ",
            inspected_last_message
          ],
          "\nState: ",
-         inspected_state | _
+         inspected_state
        ]) do
-    string_reason = chardata_reason |> :unicode.characters_to_binary() |> String.trim()
+    string_reason = reason |> :unicode.characters_to_binary() |> String.trim()
 
     %{
       reason: string_reason,
@@ -362,7 +388,7 @@ defmodule DiscoLog.LoggerHandler do
       %{reason: reason} ->
         Client.log_error(reason, metadata, config)
 
-      _ ->
+      _other ->
         Client.log_error(report, metadata, config)
     end
   end

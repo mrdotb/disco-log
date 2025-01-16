@@ -339,7 +339,7 @@ defmodule DiscoLog.PresenceTest do
 
       WebsocketClient.Mock
       |> expect(:boil_message_to_frame, fn _client, {:ssl, :fake_ssl_closed} ->
-        {:error, nil, %Mint.TransportError{reason: :closed}}
+        {:error, nil, %Mint.TransportError{reason: :closed}, []}
       end)
 
       send(pid, {:ssl, :fake_ssl_closed})
