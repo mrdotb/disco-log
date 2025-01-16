@@ -162,7 +162,7 @@ defmodule DiscoLog.Presence do
       {:error, _conn, %Mint.WebSocket.UpgradeFailureError{} = error} ->
         {:stop, {:shutdown, error}, state}
 
-      {:error, _conn, %Mint.TransportError{reason: :closed} = error} ->
+      {:error, _conn, %Mint.TransportError{reason: :closed} = error, []} ->
         {:stop, {:shutdown, error}, state}
 
       other ->

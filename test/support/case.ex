@@ -83,7 +83,12 @@ defmodule DiscoLog.Test.Case do
       |> Keyword.merge(Map.fetch!(context, :config))
       |> DiscoLog.Config.validate!()
 
+    Mox.stub(DiscoLog.WebsocketClient.Mock, :connect, fn _, _, _ ->
+      {:ok, struct(DiscoLog.WebsocketClient, %{})}
+    end)
+
     DiscoLog.DiscordMock
+    |> Mox.stub(:get_gateway, fn _config -> {:ok, "wss://gateway.discord.gg"} end)
     |> Mox.stub(:list_occurrence_threads, fn _, _ -> [] end)
     |> Mox.stub(:list_tags, fn _, _ -> %{} end)
 

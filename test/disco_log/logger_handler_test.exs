@@ -219,8 +219,8 @@ defmodule DiscoLog.LoggerHandlerTest do
       end)
 
       assert_receive {^ref, error}
-      assert error.kind == "nocatch"
-      assert error.reason == "This is a test"
+      assert error.kind == "genserver"
+      assert error.reason =~ ":nocatch"
     end
   end
 
@@ -379,6 +379,41 @@ defmodule DiscoLog.LoggerHandlerTest do
       assert_receive {^ref, error}
       assert error.kind == "genserver"
       assert error.reason =~ "** (stop) %Mint.HTTP1"
+    end
+
+    @tag config: [enable_presence: true]
+    test "GenServer crash should not crash the logger handler", %{
+      config: config,
+      test_genserver: test_genserver
+    } do
+      pid = self()
+      ref = make_ref()
+
+      DiscoLog.WebsocketClient.Mock
+      |> expect(:boil_message_to_frame, fn _client, {:ssl, :fake_ssl_closed} ->
+        {:error, nil, %Mint.TransportError{reason: :closed}}
+      end)
+      |> stub(:send_frame, fn _, _ -> {:error, :socket_closed_at_this_point} end)
+
+      DiscordMock
+      |> allow(pid, test_genserver)
+      |> expect(:create_occurrence_thread, fn _config, error ->
+        send(pid, {ref, error})
+      end)
+
+      pid =
+        DiscoLog.Registry.via(config.supervisor_name, DiscoLog.Presence) |> GenServer.whereis()
+
+      send(pid, {:ssl, :fake_ssl_closed})
+
+      assert_receive {^ref, error}
+      assert error.kind == "genserver"
+
+      assert error.reason =~
+               "** (stop) {:error, nil, %Mint.TransportError{reason: :closed}}"
+
+      assert error.context.extra_info_from_genserver.message =~
+               "GenServer %{} terminating: ** (stop)"
     end
 
     test "GenServer timeout is reported", %{test_genserver: test_genserver} do
