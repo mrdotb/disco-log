@@ -5,6 +5,15 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v1.0.0-rc.1](https://github.com/mrdotb/disco-log/compare/v1.0.0-rc.0...v1.0.0-rc.1) (2025-01-18)
+
+
+
+
+### Bug Fixes:
+
+* correct clause in SSL closed message and handle GenServer logger crash
+
 ## [v1.0.0-rc.0](https://github.com/mrdotb/disco-log/compare/v0.8.0-rc.2...v1.0.0-rc.0) (2025-01-10)
 ### Breaking Changes:
 
