@@ -22,7 +22,8 @@ defmodule DiscoLog.MixProject do
         extra_section: "GUIDES",
         extras: [
           "guides/getting-started.md",
-          "guides/advanced-configuration.md"
+          "guides/advanced-configuration.md",
+          "guides/standalone-presence.md"
         ],
         api_reference: false,
         main: "getting-started"
