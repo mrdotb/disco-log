@@ -2,7 +2,7 @@ defmodule DiscoLog.MixProject do
   use Mix.Project
 
   @source_url "https://github.com/mrdotb/disco-log"
-  @version "1.0.0-rc.2"
+  @version "1.0.0"
 
   def project do
     [
@@ -45,7 +45,7 @@ defmodule DiscoLog.MixProject do
       links: %{
         "Github" => "https://github.com/mrdotb/disco-log"
       },
-      maintainers: ["mrdotb"],
+      maintainers: ["mrdotb", "martosaur"],
       files: ~w(lib LICENSE mix.exs README.md .formatter.exs)s
     ]
   end

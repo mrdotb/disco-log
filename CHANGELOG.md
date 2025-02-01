@@ -5,6 +5,21 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v1.0.0](https://github.com/mrdotb/disco-log/compare/v0.7.0...v1.0.0) (2025-02-01)
+
+### Features:
+
+* go-to-repo: create a link to the repo viewer on discord report
+
+* presence: set basic presence status ð
+
+### Refactor:
+
+* Redesign main modules to enable ad-hoc usage
+
+
+
+
 ## [v1.0.0-rc.2](https://github.com/mrdotb/disco-log/compare/v1.0.0-rc.1...v1.0.0-rc.2) (2025-01-26)
 
 

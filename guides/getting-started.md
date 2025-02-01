@@ -9,7 +9,7 @@ The first step is to add DiscoLog to your applicaiton is to declare the package 
 ```elixir
 defp deps do
   [
-    {:disco_log, "~> 0.7.0"}
+    {:disco_log, "~> 1.0.0"}
   ]
 end
 ```
@@ -120,7 +120,7 @@ DiscoLog can optionally set your bot's status to **Online**, allowing you to dis
    ```elixir
    defp deps do
      [
-       {:disco_log, "~> 0.7.0"},
+       {:disco_log, "~> 1.0.0"},
        {:mint_web_socket, "~> 1.0"}
      ]
    end
