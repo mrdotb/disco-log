@@ -64,7 +64,7 @@ defmodule DiscoLog.MixProject do
       {:nimble_options, "~> 1.1"},
       {:mint_web_socket, "~> 1.0", optional: true},
       # Dev & test dependencies
-      {:git_ops, "~> 2.6.1", only: [:dev]},
+      {:git_ops, "~> 2.7.2", only: [:dev]},
       {:credo, "~> 1.7", only: [:dev, :test]},
       {:ex_doc, "~> 0.33", only: :dev},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
