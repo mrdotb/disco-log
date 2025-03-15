@@ -14,7 +14,7 @@ if Code.ensure_loaded?(Mint.WebSocket) do
     end
 
     @impl WebsocketClient
-    def boil_message_to_frame(%WebsocketClient{conn: conn} = client, message) do
+    def boil_message_to_frames(%WebsocketClient{conn: conn} = client, message) do
       with {:ok, conn, tcp_message} <- Mint.WebSocket.stream(conn, message) do
         handle_tcp_message(%{client | conn: conn}, tcp_message)
       end
@@ -38,20 +38,23 @@ if Code.ensure_loaded?(Mint.WebSocket) do
          ]) do
       with {:ok, conn, websocket} <- Mint.WebSocket.new(conn, ref, status, headers) do
         client = %{client | conn: conn, websocket: websocket}
-
-        if data_frame = Enum.find(frames, &match?({:data, ^ref, _}, &1)) do
-          handle_tcp_message(client, [data_frame])
-        else
-          {:ok, client, nil}
-        end
+        handle_tcp_message(client, frames)
       end
     end
 
-    defp handle_tcp_message(%WebsocketClient{ref: ref, websocket: websocket} = client, [
-           {:data, ref, data}
-         ]) do
-      with {:ok, websocket, frame} <- Mint.WebSocket.decode(websocket, data) do
-        {:ok, %{client | websocket: websocket}, frame}
+    defp handle_tcp_message(%WebsocketClient{ref: ref} = client, frames) do
+      for {:data, ^ref, data} <- frames, reduce: {:ok, client, []} do
+        {:ok, client, frames} ->
+          case Mint.WebSocket.decode(client.websocket, data) do
+            {:ok, websocket, new_frames} ->
+              {:ok, %{client | websocket: websocket}, frames ++ new_frames}
+
+            {:error, websocket, reason} ->
+              {:error, %{client | websocket: websocket}, reason}
+          end
+
+        {:error, client, reason} ->
+          {:error, client, reason}
       end
     end
   end
