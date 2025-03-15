@@ -61,68 +61,38 @@ defmodule DiscoLog.Presence do
   # https://discord.com/developers/docs/events/gateway#hello-event
   def handle_continue(
         {:event,
-         %{"op" => 10, "d" => %{"heartbeat_interval" => interval}, "s" => sequence_number}},
+         [
+           %{"op" => 10, "d" => %{"heartbeat_interval" => interval}, "s" => sequence_number}
+           | events
+         ]},
         state
       ) do
     (interval * state.jitter) |> round() |> schedule_heartbeat()
+    state = identify(%{state | heartbeat_interval: interval, sequence_number: sequence_number})
 
-    {:noreply, %{state | heartbeat_interval: interval, sequence_number: sequence_number},
-     {:continue, :identify}}
-  end
-
-  # Sending Identify event to update presence
-  # https://discord.com/developers/docs/events/gateway#identifying
-  def handle_continue(
-        :identify,
-        %__MODULE__{
-          bot_token: bot_token,
-          websocket_client: client,
-          presence_status: presence_status
-        } = state
-      ) do
-    identify_event = %{
-      op: 2,
-      d: %{
-        token: bot_token,
-        intents: 0,
-        presence: %{
-          activities: [%{type: 4, state: presence_status, name: "Name"}],
-          since: nil,
-          status: "online",
-          afk: false
-        },
-        properties: %{
-          os: "BEAM",
-          browser: "DiscoLog",
-          device: "DiscoLog"
-        }
-      }
-    }
-
-    {:ok, client} = WebsocketClient.send_event(client, identify_event)
-    {:noreply, %{state | websocket_client: client}}
+    {:noreply, state, {:continue, {:event, events}}}
   end
 
   # Note Heartbeat ACK
-  def handle_continue({:event, %{"op" => 11}}, state) do
-    {:noreply, %{state | waiting_for_ack?: false}}
+  def handle_continue({:event, [%{"op" => 11} | events]}, state) do
+    {:noreply, %{state | waiting_for_ack?: false}, {:continue, {:event, events}}}
   end
 
   # Respond to Heartbeat request
   # https://discord.com/developers/docs/events/gateway#heartbeat-requests
   def handle_continue(
-        {:event, %{"op" => 1}},
+        {:event, [%{"op" => 1} | events]},
         %__MODULE__{websocket_client: client, sequence_number: sequence_number} = state
       ) do
     {:ok, client} = WebsocketClient.send_event(client, %{op: 1, d: sequence_number})
-    {:noreply, %{state | websocket_client: client}}
+    {:noreply, %{state | websocket_client: client}, {:continue, {:event, events}}}
   end
 
-  def handle_continue({:event, %{"op" => 0, "s" => s}}, state) do
-    {:noreply, %{state | sequence_number: s}}
+  def handle_continue({:event, [%{"op" => 0, "s" => s} | events]}, state) do
+    {:noreply, %{state | sequence_number: s}, {:continue, {:event, events}}}
   end
 
-  def handle_continue({:event, _event}, state) do
+  def handle_continue({:event, _events}, state) do
     {:noreply, state}
   end
 
@@ -159,8 +129,8 @@ defmodule DiscoLog.Presence do
       {:ok, :closed} ->
         {:stop, {:shutdown, :closed_by_client}, state}
 
-      {:ok, client, msg} ->
-        {:noreply, %{state | websocket_client: client}, {:continue, {:event, msg}}}
+      {:ok, client, messages} ->
+        {:noreply, %{state | websocket_client: client}, {:continue, {:event, messages}}}
 
       {:error, _conn, %Mint.WebSocket.UpgradeFailureError{} = error} ->
         {:stop, {:shutdown, error}, state}
@@ -186,5 +156,31 @@ defmodule DiscoLog.Presence do
 
   defp schedule_heartbeat(schedule_in) do
     Process.send_after(self(), :heartbeat, schedule_in)
+  end
+
+  # Sending Identify event to update presence
+  # https://discord.com/developers/docs/events/gateway#identifying
+  defp identify(%__MODULE__{} = state) do
+    identify_event = %{
+      op: 2,
+      d: %{
+        token: state.bot_token,
+        intents: 0,
+        presence: %{
+          activities: [%{type: 4, state: state.presence_status, name: "Name"}],
+          since: nil,
+          status: "online",
+          afk: false
+        },
+        properties: %{
+          os: "BEAM",
+          browser: "DiscoLog",
+          device: "DiscoLog"
+        }
+      }
+    }
+
+    {:ok, client} = WebsocketClient.send_event(state.websocket_client, identify_event)
+    %{state | websocket_client: client}
   end
 end

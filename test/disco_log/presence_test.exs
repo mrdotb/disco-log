@@ -66,8 +66,8 @@ defmodule DiscoLog.PresenceTest do
 
     test "Connect: no immediate Hello event", %{pid: pid} do
       WebsocketClient.Mock
-      |> expect(:boil_message_to_frame, fn %WebsocketClient{} = client, {:ssl, :fake_upgrade} ->
-        {:ok, client, nil}
+      |> expect(:boil_message_to_frames, fn %WebsocketClient{} = client, {:ssl, :fake_upgrade} ->
+        {:ok, client, []}
       end)
 
       send(pid, {:ssl, :fake_upgrade})
@@ -76,7 +76,7 @@ defmodule DiscoLog.PresenceTest do
 
     test "Hello: sends Identify event", %{pid: pid} do
       WebsocketClient.Mock
-      |> expect(:boil_message_to_frame, fn %WebsocketClient{} = client, {:ssl, :fake_hello} ->
+      |> expect(:boil_message_to_frames, fn %WebsocketClient{} = client, {:ssl, :fake_hello} ->
         msg = %{
           "op" => 10,
           "s" => 42,
@@ -120,7 +120,7 @@ defmodule DiscoLog.PresenceTest do
       test_pid = self()
 
       WebsocketClient.Mock
-      |> expect(:boil_message_to_frame, fn %WebsocketClient{} = client, {:ssl, :fake_hello} ->
+      |> expect(:boil_message_to_frames, fn %WebsocketClient{} = client, {:ssl, :fake_hello} ->
         msg = %{
           "op" => 10,
           "s" => 42,
@@ -154,20 +154,36 @@ defmodule DiscoLog.PresenceTest do
       test_pid = self()
 
       WebsocketClient.Mock
-      |> expect(:boil_message_to_frame, fn %WebsocketClient{} = client, {:ssl, :fake_ack} ->
+      |> expect(:boil_message_to_frames, fn %WebsocketClient{} = client, {:ssl, :fake_ack} ->
         send(test_pid, :ack_handled)
         {:ok, client, [text: Jason.encode!(%{"op" => 11})]}
       end)
 
       send(pid, {:ssl, :fake_ack})
       assert_receive :ack_handled
+      :sys.get_status(pid)
+    end
+
+    test "Heartbeat ACK: multiple ACKs", %{pid: pid} do
+      test_pid = self()
+
+      WebsocketClient.Mock
+      |> expect(:boil_message_to_frames, fn %WebsocketClient{} = client, {:ssl, :fake_ack} ->
+        send(test_pid, :ack_handled)
+        msg = Jason.encode!(%{"op" => 11})
+        {:ok, client, [text: msg, text: msg]}
+      end)
+
+      send(pid, {:ssl, :fake_ack})
+      assert_receive :ack_handled
+      :sys.get_status(pid)
     end
 
     test "Heartbeat: closes connection if no ACK received between regular heartbeats", %{pid: pid} do
       test_pid = self()
 
       WebsocketClient.Mock
-      |> expect(:boil_message_to_frame, fn %WebsocketClient{} = client, {:ssl, :fake_hello} ->
+      |> expect(:boil_message_to_frames, fn %WebsocketClient{} = client, {:ssl, :fake_hello} ->
         msg = %{
           "op" => 10,
           "s" => 42,
@@ -197,8 +213,8 @@ defmodule DiscoLog.PresenceTest do
       test_pid = self()
 
       WebsocketClient.Mock
-      |> expect(:boil_message_to_frame, fn %WebsocketClient{} = client,
-                                           {:ssl, :fake_heartbeat_request} ->
+      |> expect(:boil_message_to_frames, fn %WebsocketClient{} = client,
+                                            {:ssl, :fake_heartbeat_request} ->
         {:ok, client, [text: Jason.encode!(%{"op" => 1})]}
       end)
       |> expect(:send_frame, fn %WebsocketClient{} = client, {:text, event} ->
@@ -215,21 +231,22 @@ defmodule DiscoLog.PresenceTest do
       test_pid = self()
 
       WebsocketClient.Mock
-      |> expect(:boil_message_to_frame, fn %WebsocketClient{} = client,
-                                           {:ssl, :fake_ready_event} ->
+      |> expect(:boil_message_to_frames, fn %WebsocketClient{} = client,
+                                            {:ssl, :fake_ready_event} ->
         send(test_pid, :event_handled)
         {:ok, client, [text: Jason.encode!(%{"op" => 0, "s" => 43})]}
       end)
 
       send(pid, {:ssl, :fake_ready_event})
       assert_receive :event_handled
+      :sys.get_status(pid)
     end
 
     test "Other events: noop", %{pid: pid} do
       test_pid = self()
 
       WebsocketClient.Mock
-      |> expect(:boil_message_to_frame, fn %WebsocketClient{} = client, {:ssl, :fake_event} ->
+      |> expect(:boil_message_to_frames, fn %WebsocketClient{} = client, {:ssl, :fake_event} ->
         send(test_pid, :event_handled)
         {:ok, client, [text: Jason.encode!(%{"op" => 7})]}
       end)
@@ -269,7 +286,7 @@ defmodule DiscoLog.PresenceTest do
       ref = Process.monitor(pid)
 
       WebsocketClient.Mock
-      |> expect(:boil_message_to_frame, fn _client, :unknown_message ->
+      |> expect(:boil_message_to_frames, fn _client, :unknown_message ->
         {:error, "BOOM"}
       end)
       |> expect(:send_frame, fn client, _ -> {:ok, client} end)
@@ -282,7 +299,7 @@ defmodule DiscoLog.PresenceTest do
       ref = Process.monitor(pid)
 
       WebsocketClient.Mock
-      |> expect(:boil_message_to_frame, fn _client, :unknown_message ->
+      |> expect(:boil_message_to_frames, fn _client, :unknown_message ->
         {:error, "BOOM"}
       end)
       |> expect(:send_frame, fn client, {:close, 1000, "graceful disconnect"} -> {:ok, client} end)
@@ -295,7 +312,7 @@ defmodule DiscoLog.PresenceTest do
       ref = Process.monitor(pid)
 
       WebsocketClient.Mock
-      |> expect(:boil_message_to_frame, fn _client, {:ssl, :fake_closed} ->
+      |> expect(:boil_message_to_frames, fn _client, {:ssl, :fake_closed} ->
         {:ok, :closed}
       end)
 
@@ -307,7 +324,7 @@ defmodule DiscoLog.PresenceTest do
       ref = Process.monitor(pid)
 
       WebsocketClient.Mock
-      |> expect(:boil_message_to_frame, fn client, {:ssl, :fake_server_closed} ->
+      |> expect(:boil_message_to_frames, fn client, {:ssl, :fake_server_closed} ->
         {:ok, client, [{:close, 1000, "reason"}]}
       end)
       |> expect(:send_frame, fn client, :close -> {:ok, client} end)
@@ -323,7 +340,7 @@ defmodule DiscoLog.PresenceTest do
 
       WebsocketClient.Mock
       |> expect(:connect, fn _, _, _ -> {:ok, %WebsocketClient{}} end)
-      |> expect(:boil_message_to_frame, fn _client, {:ssl, :fake_upgrade} ->
+      |> expect(:boil_message_to_frames, fn _client, {:ssl, :fake_upgrade} ->
         {:error, nil, %Mint.WebSocket.UpgradeFailureError{status_code: 520}}
       end)
 
@@ -337,7 +354,7 @@ defmodule DiscoLog.PresenceTest do
       ref = Process.monitor(pid)
 
       WebsocketClient.Mock
-      |> expect(:boil_message_to_frame, fn _client, {:ssl, :fake_ssl_closed} ->
+      |> expect(:boil_message_to_frames, fn _client, {:ssl, :fake_ssl_closed} ->
         {:error, nil, %Mint.TransportError{reason: :closed}, []}
       end)
 

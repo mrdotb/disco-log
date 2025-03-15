@@ -16,13 +16,13 @@ defmodule DiscoLog.WebsocketClient do
               {:ok, t()} | {:error, Mint.WebSocket.error()}
   defdelegate connect(host, port, path), to: @adapter
 
-  @callback boil_message_to_frame(client :: t(), message :: any()) ::
-              {:ok, t(), Mint.WebSocket.frame() | nil}
+  @callback boil_message_to_frames(client :: t(), message :: any()) ::
+              {:ok, t(), [Mint.WebSocket.frame() | {:error, term()}]}
+              | {:error, t(), any()}
               | {:error, Mint.HTTP.t(), Mint.Types.error(), [Mint.Types.response()]}
               | {:error, Mint.HTTP.t(), Mint.WebSocket.error()}
-              | {:error, Mint.WebSocket.t(), any()}
               | :unknown
-  defdelegate boil_message_to_frame(client, message), to: @adapter
+  defdelegate boil_message_to_frames(client, message), to: @adapter
 
   @callback send_frame(client :: t(), frame :: Mint.WebSocket.frame()) ::
               {:ok, t()}
@@ -42,27 +42,28 @@ defmodule DiscoLog.WebsocketClient do
   end
 
   def handle_message(client, message) do
-    with {:ok, client, frame} <- boil_message_to_frame(client, message) do
-      handle_frame(client, frame)
+    with {:ok, client, frames} <- boil_message_to_frames(client, message) do
+      if frame = Enum.find(frames, &match?({:close, _code, _reason}, &1)) do
+        handle_close_frame(client, frame)
+      else
+        {:ok, client, Enum.map(frames, &handle_frame/1)}
+      end
     end
   end
 
-  defp handle_frame(client, text: text), do: {:ok, client, Jason.decode!(text)}
+  defp handle_frame({:text, text}), do: Jason.decode!(text)
 
-  defp handle_frame(%__MODULE__{state: :closing} = client, [{:close, _code, _reason}]) do
+  defp handle_close_frame(%__MODULE__{state: :closing} = client, {:close, _code, _reason}) do
     with {:ok, _conn} <- close(client) do
       {:ok, :closed}
     end
   end
 
-  defp handle_frame(client, [{:close, _code, reason}]) do
+  defp handle_close_frame(client, {:close, _code, reason}) do
     with {:ok, _client} <- ack_server_closure(client) do
       {:ok, :closed_by_server, reason}
     end
   end
-
-  defp handle_frame(client, nil), do: {:ok, client, nil}
-  defp handle_frame(client, []), do: {:ok, client, nil}
 
   defp ack_server_closure(client) do
     with {:ok, client} <- send_frame(client, :close),

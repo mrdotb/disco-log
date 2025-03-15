@@ -559,7 +559,7 @@ defmodule DiscoLog.LoggerHandlerTest do
       ref2 = make_ref()
 
       DiscoLog.WebsocketClient.Mock
-      |> expect(:boil_message_to_frame, fn _client, {:ssl, :fake_ssl_closed} ->
+      |> expect(:boil_message_to_frames, fn _client, {:ssl, :fake_ssl_closed} ->
         {:error, nil, %Mint.TransportError{reason: :closed}}
       end)
 
