@@ -5,6 +5,15 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v1.0.1](https://github.com/mrdotb/disco-log/compare/v1.0.0...v1.0.1) (2025-03-16)
+
+
+
+
+### Bug Fixes:
+
+* presence: account for handling multiple data frames at once
+
 ## [v1.0.0](https://github.com/mrdotb/disco-log/compare/v0.7.0...v1.0.0) (2025-02-01)
 
 ### Features:
