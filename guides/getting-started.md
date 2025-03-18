@@ -9,7 +9,7 @@ The first step is to add DiscoLog to your applicaiton is to declare the package 
 ```elixir
 defp deps do
   [
-    {:disco_log, "~> 1.0.0"}
+    {:disco_log, "~> 1.0.1"}
   ]
 end
 ```
@@ -77,7 +77,11 @@ Edit your `config/dev.exs` and add the following configuration with the bot toke
 config :disco_log,
   otp_app: :app_name,
   token: "YOUR_BOT.TOKEN",
-  guild_id: "YOUR_SERVER_ID"
+  guild_id: "YOUR_SERVER_ID",
+  category_id: "",
+  occurrences_channel_id: "",
+  info_channel_id: "",
+  error_channel_id: ""
 ```
 
 Run the mix task
