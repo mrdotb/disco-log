@@ -5,6 +5,15 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v1.0.3](https://github.com/mrdotb/disco-log/compare/v1.0.2...v1.0.3) (2025-03-20)
+
+
+
+
+### Bug Fixes:
+
+* missing mint structs when using disco-log without presence
+
 ## [v1.0.2](https://github.com/mrdotb/disco-log/compare/v1.0.1...v1.0.2) (2025-03-18)
 
 
