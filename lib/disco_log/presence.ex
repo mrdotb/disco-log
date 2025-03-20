@@ -132,10 +132,11 @@ defmodule DiscoLog.Presence do
       {:ok, client, messages} ->
         {:noreply, %{state | websocket_client: client}, {:continue, {:event, messages}}}
 
-      {:error, _conn, %Mint.WebSocket.UpgradeFailureError{} = error} ->
+      {:error, _conn, error} when is_struct(error, Mint.WebSocket.UpgradeFailureError) ->
         {:stop, {:shutdown, error}, state}
 
-      {:error, _conn, %Mint.TransportError{reason: :closed} = error, []} ->
+      {:error, _conn, %{reason: :closed} = error, []}
+      when is_struct(error, Mint.TransportError) ->
         {:stop, {:shutdown, error}, state}
 
       other ->
