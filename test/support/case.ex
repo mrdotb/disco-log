@@ -107,33 +107,20 @@ defmodule DiscoLog.Test.Case do
   end
 
   @doc """
-  Attaches a dedicated logger handler for a test which will skip all events that don't originate in the test.
+  Attach individual test logger handler with ownership filter
   """
-  def attach_logger_handler(%{config: config, test: test}) do
-    :logger.add_handler(test, DiscoLog.LoggerHandler, %{
-      config: config,
-      filters: [
-        filter_only_self:
-          {fn event, test_pid ->
-             # Some test spawn new processes that the handler will be invoked, so `self()` is not necessarily the same as `test_pid`.
-             # To identify if this is the case we piggyback on Mox ownership mechanism, assuming that if test spawned a process,
-             # it also allowed the process to call DiscordMock either explicitely or through $callers
-             callers = Process.get(:"$callers") || []
+  def setup_logger_handler(%{test: test, config: config} = context) do
+    big_config_override = Map.take(context, [:handle_otp_reports, :handle_sasl_reports])
 
-             {:ok, owner_pid} =
-               NimbleOwnership.fetch_owner(
-                 {:global, Mox.Server},
-                 [self() | callers],
-                 DiscoLog.Discord.API.Mock
-               )
+    {context, on_exit} =
+      LoggerHandlerKit.Arrange.add_handler(
+        test,
+        DiscoLog.LoggerHandler,
+        config,
+        big_config_override
+      )
 
-             if owner_pid == test_pid, do: event, else: :stop
-           end, self()}
-      ]
-    })
-
-    on_exit(fn -> :logger.remove_handler(test) end)
-
-    :ok
+    on_exit(on_exit)
+    context
   end
 end

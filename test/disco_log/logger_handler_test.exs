@@ -7,18 +7,14 @@ defmodule DiscoLog.LoggerHandlerTest do
 
   @moduletag config: [supervisor_name: __MODULE__]
 
+  setup_all {LoggerHandlerKit.Arrange, :ensure_per_handler_translation}
+
   setup :setup_supervisor
-  setup :attach_logger_handler
+  setup :setup_logger_handler
   setup :verify_on_exit!
 
-  test "skips logs that are not info or lower than error" do
-    # The test can't fail but there will be :remove_failing_handler error
-    Logger.debug("Debug message")
-    Logger.warning("Warning message")
-  end
-
   describe "info level" do
-    test "info log string type" do
+    test "string", %{handler_ref: ref} do
       pid = self()
 
       expect(API.Mock, :request, fn client, method, url, opts ->
@@ -26,13 +22,14 @@ defmodule DiscoLog.LoggerHandlerTest do
         API.Stub.request(client, method, url, opts)
       end)
 
-      Logger.info("Info message")
+      LoggerHandlerKit.Act.string_message()
+      LoggerHandlerKit.Assert.assert_logged(ref)
 
       assert_receive [{:path_params, [channel_id: "info_channel_id"]}, {:form_multipart, body}]
-      assert %{payload_json: %{content: "Info message"}} = decode_body(body)
+      assert %{payload_json: %{content: "Hello World"}} = decode_body(body)
     end
 
-    test "info log report type map" do
+    test "charlist", %{handler_ref: ref} do
       pid = self()
 
       expect(API.Mock, :request, fn client, method, url, opts ->
@@ -40,15 +37,46 @@ defmodule DiscoLog.LoggerHandlerTest do
         API.Stub.request(client, method, url, opts)
       end)
 
-      Logger.info(%{message: "Info message"})
+      LoggerHandlerKit.Act.charlist_message()
+      LoggerHandlerKit.Assert.assert_logged(ref)
+
+      assert_receive [{:path_params, [channel_id: "info_channel_id"]}, {:form_multipart, body}]
+      assert %{payload_json: %{content: "Hello World"}} = decode_body(body)
+    end
+
+    test "chardata", %{handler_ref: ref} do
+      pid = self()
+
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
+      end)
+
+      LoggerHandlerKit.Act.chardata_message(:improper)
+      LoggerHandlerKit.Assert.assert_logged(ref)
+
+      assert_receive [{:path_params, [channel_id: "info_channel_id"]}, {:form_multipart, body}]
+      assert %{payload_json: %{content: "Hello World"}} = decode_body(body)
+    end
+
+    test "map report", %{handler_ref: ref} do
+      pid = self()
+
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
+      end)
+
+      LoggerHandlerKit.Act.map_report()
+      LoggerHandlerKit.Assert.assert_logged(ref)
 
       assert_receive [{:path_params, [channel_id: "info_channel_id"]}, {:form_multipart, body}]
 
-      assert %{message: {%{message: "Info message"}, [filename: "message.json"]}} =
+      assert %{message: {%{hello: "world"}, [filename: "message.json"]}} =
                decode_body(body)
     end
 
-    test "info log report type keyword" do
+    test "keyword report", %{handler_ref: ref} do
       pid = self()
 
       expect(API.Mock, :request, fn client, method, url, opts ->
@@ -56,15 +84,16 @@ defmodule DiscoLog.LoggerHandlerTest do
         API.Stub.request(client, method, url, opts)
       end)
 
-      Logger.info(message: "Info message")
+      LoggerHandlerKit.Act.keyword_report()
+      LoggerHandlerKit.Assert.assert_logged(ref)
 
       assert_receive [{:path_params, [channel_id: "info_channel_id"]}, {:form_multipart, body}]
 
-      assert %{message: {%{message: "Info message"}, [filename: "message.json"]}} =
+      assert %{message: {%{hello: "world"}, [filename: "message.json"]}} =
                decode_body(body)
     end
 
-    test "info log report type struct" do
+    test "struct report", %{handler_ref: ref} do
       pid = self()
 
       expect(API.Mock, :request, fn client, method, url, opts ->
@@ -72,15 +101,20 @@ defmodule DiscoLog.LoggerHandlerTest do
         API.Stub.request(client, method, url, opts)
       end)
 
-      Logger.info(%Foo{})
+      LoggerHandlerKit.Act.struct_report()
+      LoggerHandlerKit.Assert.assert_logged(ref)
 
       assert_receive [{:path_params, [channel_id: "info_channel_id"]}, {:form_multipart, body}]
 
-      assert %{message: {%{__struct__: "Elixir.Foo", bar: "nil"}, [filename: "message.json"]}} =
+      assert %{
+               message:
+                 {%{__struct__: "Elixir.LoggerHandlerKit.FakeStruct", hello: "world"},
+                  [filename: "message.json"]}
+             } =
                decode_body(body)
     end
 
-    test "info log erlang format" do
+    test "erlang io format", %{handler_ref: ref} do
       pid = self()
 
       expect(API.Mock, :request, fn client, method, url, opts ->
@@ -88,15 +122,17 @@ defmodule DiscoLog.LoggerHandlerTest do
         API.Stub.request(client, method, url, opts)
       end)
 
-      :logger.info("Hello ~s", ["world"])
+      LoggerHandlerKit.Act.io_format()
+      LoggerHandlerKit.Assert.assert_logged(ref)
 
       assert_receive [{:path_params, [channel_id: "info_channel_id"]}, {:form_multipart, body}]
-      assert %{payload_json: %{content: "Hello world"}} = decode_body(body)
+
+      assert %{payload_json: %{content: "Hello World"}} = decode_body(body)
     end
   end
 
   describe "error level" do
-    test "error log string type" do
+    test "string", %{handler_ref: ref} do
       pid = self()
 
       expect(API.Mock, :request, fn client, method, url, opts ->
@@ -105,12 +141,13 @@ defmodule DiscoLog.LoggerHandlerTest do
       end)
 
       Logger.error("Error message")
+      LoggerHandlerKit.Assert.assert_logged(ref)
 
       assert_receive [{:path_params, [channel_id: "error_channel_id"]}, {:form_multipart, body}]
       assert %{payload_json: %{content: "Error message"}} = decode_body(body)
     end
 
-    test "error log report type struct" do
+    test "charlist", %{handler_ref: ref} do
       pid = self()
 
       expect(API.Mock, :request, fn client, method, url, opts ->
@@ -118,15 +155,29 @@ defmodule DiscoLog.LoggerHandlerTest do
         API.Stub.request(client, method, url, opts)
       end)
 
-      Logger.error(%Foo{})
+      Logger.error(~c"Hello World")
+      LoggerHandlerKit.Assert.assert_logged(ref)
 
       assert_receive [{:path_params, [channel_id: "error_channel_id"]}, {:form_multipart, body}]
-
-      assert %{message: {%{__struct__: "Elixir.Foo", bar: "nil"}, [filename: "message.json"]}} =
-               decode_body(body)
+      assert %{payload_json: %{content: "Hello World"}} = decode_body(body)
     end
 
-    test "error log report type map" do
+    test "chardata", %{handler_ref: ref} do
+      pid = self()
+
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
+      end)
+
+      Logger.error([?H, ["ello", []], 32 | ~c"World"])
+      LoggerHandlerKit.Assert.assert_logged(ref)
+
+      assert_receive [{:path_params, [channel_id: "error_channel_id"]}, {:form_multipart, body}]
+      assert %{payload_json: %{content: "Hello World"}} = decode_body(body)
+    end
+
+    test "map", %{handler_ref: ref} do
       pid = self()
 
       expect(API.Mock, :request, fn client, method, url, opts ->
@@ -135,6 +186,7 @@ defmodule DiscoLog.LoggerHandlerTest do
       end)
 
       Logger.error(%{message: "Error message"})
+      LoggerHandlerKit.Assert.assert_logged(ref)
 
       assert_receive [{:path_params, [channel_id: "error_channel_id"]}, {:form_multipart, body}]
 
@@ -142,7 +194,7 @@ defmodule DiscoLog.LoggerHandlerTest do
                decode_body(body)
     end
 
-    test "error log report type keyword" do
+    test "keyword", %{handler_ref: ref} do
       pid = self()
 
       expect(API.Mock, :request, fn client, method, url, opts ->
@@ -151,6 +203,7 @@ defmodule DiscoLog.LoggerHandlerTest do
       end)
 
       Logger.error(message: "Error message")
+      LoggerHandlerKit.Assert.assert_logged(ref)
 
       assert_receive [{:path_params, [channel_id: "error_channel_id"]}, {:form_multipart, body}]
 
@@ -158,7 +211,7 @@ defmodule DiscoLog.LoggerHandlerTest do
                decode_body(body)
     end
 
-    test "error log erlang format" do
+    test "struct", %{handler_ref: ref} do
       pid = self()
 
       expect(API.Mock, :request, fn client, method, url, opts ->
@@ -166,13 +219,19 @@ defmodule DiscoLog.LoggerHandlerTest do
         API.Stub.request(client, method, url, opts)
       end)
 
-      :logger.error("Hello ~s", ["world"])
+      Logger.error(%LoggerHandlerKit.FakeStruct{hello: "world"})
+      LoggerHandlerKit.Assert.assert_logged(ref)
 
       assert_receive [{:path_params, [channel_id: "error_channel_id"]}, {:form_multipart, body}]
-      assert %{payload_json: %{content: "Hello world"}} = decode_body(body)
+
+      assert %{
+               message:
+                 {%{__struct__: "Elixir.LoggerHandlerKit.FakeStruct", hello: "world"},
+                  [filename: "message.json"]}
+             } = decode_body(body)
     end
 
-    test "error log IO data" do
+    test "erlang io format", %{handler_ref: ref} do
       pid = self()
 
       expect(API.Mock, :request, fn client, method, url, opts ->
@@ -180,13 +239,15 @@ defmodule DiscoLog.LoggerHandlerTest do
         API.Stub.request(client, method, url, opts)
       end)
 
-      Logger.error(["Hello", " ", "world"])
+      :logger.error("Hello ~s", ["World"])
+      LoggerHandlerKit.Assert.assert_logged(ref)
 
       assert_receive [{:path_params, [channel_id: "error_channel_id"]}, {:form_multipart, body}]
-      assert %{payload_json: %{content: "Hello world"}} = decode_body(body)
+
+      assert %{payload_json: %{content: "Hello World"}} = decode_body(body)
     end
 
-    test "a logged raised exception is" do
+    test "task error exception", %{handler_ref: ref} do
       pid = self()
 
       expect(API.Mock, :request, fn client, method, url, opts ->
@@ -194,9 +255,8 @@ defmodule DiscoLog.LoggerHandlerTest do
         API.Stub.request(client, method, url, opts)
       end)
 
-      Task.start(fn ->
-        raise "Unique Error"
-      end)
+      LoggerHandlerKit.Act.task_error(:exception)
+      LoggerHandlerKit.Assert.assert_logged(ref)
 
       assert_receive [
         {:path_params, [channel_id: "occurrences_channel_id"]},
@@ -211,11 +271,11 @@ defmodule DiscoLog.LoggerHandlerTest do
                }
              } = decode_body(body)
 
-      assert message =~ "Unique Error"
+      assert message =~ "oops"
       assert thread_name =~ "Elixir.RuntimeError"
     end
 
-    test "badarith error" do
+    test "task error undefined", %{handler_ref: ref} do
       pid = self()
 
       expect(API.Mock, :request, fn client, method, url, opts ->
@@ -223,9 +283,8 @@ defmodule DiscoLog.LoggerHandlerTest do
         API.Stub.request(client, method, url, opts)
       end)
 
-      Task.start(fn ->
-        1 + to_string(1)
-      end)
+      LoggerHandlerKit.Act.task_error(:undefined)
+      LoggerHandlerKit.Assert.assert_logged(ref)
 
       assert_receive [
         {:path_params, [channel_id: "occurrences_channel_id"]},
@@ -240,43 +299,11 @@ defmodule DiscoLog.LoggerHandlerTest do
                }
              } = decode_body(body)
 
-      assert message =~ "bad argument in arithmetic expression"
-      assert thread_name =~ "Elixir.ArithmeticError"
-    end
-
-    test "undefined function errors" do
-      pid = self()
-
-      expect(API.Mock, :request, fn client, method, url, opts ->
-        send(pid, opts)
-        API.Stub.request(client, method, url, opts)
-      end)
-
-      # This function does not exist and will raise when called
-      {m, f, a} = {DiscoLog, :invalid_fun, []}
-
-      Task.start(fn ->
-        apply(m, f, a)
-      end)
-
-      assert_receive [
-        {:path_params, [channel_id: "occurrences_channel_id"]},
-        {:form_multipart, body}
-      ]
-
-      assert %{
-               payload_json: %{
-                 applied_tags: [],
-                 message: %{content: message},
-                 name: thread_name
-               }
-             } = decode_body(body)
-
-      assert message =~ "function DiscoLog.invalid_fun/0 is undefined or private"
+      assert message =~ "function :module_does_not_exist.undef/0 is undefined"
       assert thread_name =~ "Elixir.UndefinedFunctionError"
     end
 
-    test "throws" do
+    test "task error throw", %{handler_ref: ref} do
       pid = self()
 
       expect(API.Mock, :request, fn client, method, url, opts ->
@@ -284,9 +311,8 @@ defmodule DiscoLog.LoggerHandlerTest do
         API.Stub.request(client, method, url, opts)
       end)
 
-      Task.start(fn ->
-        throw("This is a test")
-      end)
+      LoggerHandlerKit.Act.task_error(:throw)
+      LoggerHandlerKit.Assert.assert_logged(ref)
 
       assert_receive [
         {:path_params, [channel_id: "occurrences_channel_id"]},
@@ -301,28 +327,20 @@ defmodule DiscoLog.LoggerHandlerTest do
                }
              } = decode_body(body)
 
-      assert message =~ "{:nocatch, \"This is a test\"}"
+      assert message =~ "**Reason:** `{:nocatch, \"catch!\"}`"
       assert thread_name =~ "genserver"
     end
-  end
 
-  describe "with a crashing GenServer" do
-    setup do
-      %{test_genserver: start_supervised!(DiscoLog.TestGenServer, restart: :temporary)}
-    end
-
-    test "a GenServer raising an error is reported",
-         %{test_genserver: test_genserver} do
+    test "task error exit", %{handler_ref: ref} do
       pid = self()
 
-      API.Mock
-      |> allow(pid, test_genserver)
-      |> expect(:request, fn client, method, url, opts ->
+      expect(API.Mock, :request, fn client, method, url, opts ->
         send(pid, opts)
         API.Stub.request(client, method, url, opts)
       end)
 
-      run_and_catch_exit(test_genserver, fn -> Keyword.fetch!([], :foo) end)
+      LoggerHandlerKit.Act.task_error(:exit)
+      LoggerHandlerKit.Assert.assert_logged(ref)
 
       assert_receive [
         {:path_params, [channel_id: "occurrences_channel_id"]},
@@ -337,23 +355,20 @@ defmodule DiscoLog.LoggerHandlerTest do
                }
              } = decode_body(body)
 
-      assert message =~ "key :foo not found in: []"
-      assert thread_name =~ "Elixir.KeyError"
+      assert message =~ "**Reason:** `\"i quit\"`"
+      assert thread_name =~ "genserver"
     end
 
-    test "a GenServer throw is reported", %{test_genserver: test_genserver} do
+    test "genserver crash exception", %{handler_ref: ref} do
       pid = self()
 
-      API.Mock
-      |> allow(pid, test_genserver)
-      |> expect(:request, fn client, method, url, opts ->
+      expect(API.Mock, :request, fn client, method, url, opts ->
         send(pid, opts)
         API.Stub.request(client, method, url, opts)
       end)
 
-      run_and_catch_exit(test_genserver, fn ->
-        throw(:testing_throw)
-      end)
+      LoggerHandlerKit.Act.genserver_crash(:exception)
+      LoggerHandlerKit.Assert.assert_logged(ref)
 
       assert_receive [
         {:path_params, [channel_id: "occurrences_channel_id"]},
@@ -368,25 +383,20 @@ defmodule DiscoLog.LoggerHandlerTest do
                }
              } = decode_body(body)
 
-      assert message =~ "** (stop) bad return value: :testing_throw"
-      assert message =~ "nofile"
-      assert message =~ "nofunction"
-      assert thread_name =~ "genserver"
+      assert message =~ "**Reason:** `oops`"
+      assert thread_name =~ "Elixir.RuntimeError"
     end
 
-    test "abnormal GenServer exit is reported", %{test_genserver: test_genserver} do
+    test "genserver crash throw", %{handler_ref: ref} do
       pid = self()
 
-      API.Mock
-      |> allow(pid, test_genserver)
-      |> expect(:request, fn client, method, url, opts ->
+      expect(API.Mock, :request, fn client, method, url, opts ->
         send(pid, opts)
         API.Stub.request(client, method, url, opts)
       end)
 
-      run_and_catch_exit(test_genserver, fn ->
-        {:stop, :bad_exit, :no_state}
-      end)
+      LoggerHandlerKit.Act.genserver_crash(:throw)
+      LoggerHandlerKit.Assert.assert_logged(ref)
 
       assert_receive [
         {:path_params, [channel_id: "occurrences_channel_id"]},
@@ -401,30 +411,64 @@ defmodule DiscoLog.LoggerHandlerTest do
                }
              } = decode_body(body)
 
-      assert message =~ "** (stop) :bad_exit"
-      assert message =~ "nofile"
-      assert message =~ "nofunction"
+      assert message =~ "**Reason:** `** (stop) bad return value: \"catch!\"`"
       assert thread_name =~ "genserver"
     end
 
-    test "an exit while calling another GenServer is reported nicely",
-         %{test_genserver: test_genserver} do
+    test "genserver crash abnormal exit", %{handler_ref: ref} do
       pid = self()
 
-      API.Mock
-      |> allow(pid, test_genserver)
-      |> expect(:request, fn client, method, url, opts ->
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
+      end)
+
+      try do
+        {:ok, pid} = LoggerHandlerKit.GenServer.start(nil)
+        GenServer.call(pid, {:run, fn -> {:stop, :bad_exit, :no_state} end})
+      catch
+        :exit, {:bad_exit, _} -> :ok
+      end
+
+      LoggerHandlerKit.Assert.assert_logged(ref)
+
+      assert_receive [
+        {:path_params, [channel_id: "occurrences_channel_id"]},
+        {:form_multipart, body}
+      ]
+
+      assert %{
+               payload_json: %{
+                 applied_tags: [],
+                 message: %{content: message},
+                 name: thread_name
+               }
+             } = decode_body(body)
+
+      assert message =~ "**Reason:** `** (stop) :bad_exit`"
+      assert thread_name =~ "genserver"
+    end
+
+    test "genserver crash while calling another process", %{handler_ref: ref} do
+      pid = self()
+
+      expect(API.Mock, :request, fn client, method, url, opts ->
         send(pid, opts)
         API.Stub.request(client, method, url, opts)
       end)
 
       # Get a PID and make sure it's done before using it.
-      {pid, monitor_ref} = spawn_monitor(fn -> :ok end)
+      {dead_pid, monitor_ref} = spawn_monitor(fn -> :ok end)
       assert_receive {:DOWN, ^monitor_ref, _, _, _}
 
-      run_and_catch_exit(test_genserver, fn ->
-        GenServer.call(pid, :ping)
-      end)
+      try do
+        {:ok, pid} = LoggerHandlerKit.GenServer.start(nil)
+        GenServer.call(pid, {:run, fn -> GenServer.call(dead_pid, :ping) end})
+      catch
+        :exit, {{:noproc, _}, _} -> :ok
+      end
+
+      LoggerHandlerKit.Assert.assert_logged(ref)
 
       assert_receive [
         {:path_params, [channel_id: "occurrences_channel_id"]},
@@ -448,22 +492,24 @@ defmodule DiscoLog.LoggerHandlerTest do
                "** (EXIT) no process: the process is not alive or there's no process currently associated with the given name, possibly because its application isn't started"
     end
 
-    test "a timeout while calling another GenServer is reported nicely",
-         %{test_genserver: test_genserver} do
+    test "genserver crash due to timeout calling another genserver", %{handler_ref: ref} do
       pid = self()
 
-      API.Mock
-      |> allow(pid, test_genserver)
-      |> expect(:request, fn client, method, url, opts ->
+      expect(API.Mock, :request, fn client, method, url, opts ->
         send(pid, opts)
         API.Stub.request(client, method, url, opts)
       end)
 
       {:ok, agent} = Agent.start_link(fn -> nil end)
 
-      run_and_catch_exit(test_genserver, fn ->
-        Agent.get(agent, & &1, 0)
-      end)
+      try do
+        {:ok, pid} = LoggerHandlerKit.GenServer.start(nil)
+        GenServer.call(pid, {:run, fn -> Agent.get(agent, & &1, 0) end})
+      catch
+        :exit, {{:timeout, _}, _} -> :ok
+      end
+
+      LoggerHandlerKit.Assert.assert_logged(ref)
 
       assert_receive [
         {:path_params, [channel_id: "occurrences_channel_id"]},
@@ -485,20 +531,16 @@ defmodule DiscoLog.LoggerHandlerTest do
       assert extra_reason =~ "** (EXIT) time out"
     end
 
-    test "bad function call causing GenServer crash is reported",
-         %{test_genserver: test_genserver} do
+    test "genserver crash exit with a struct", %{handler_ref: ref} do
       pid = self()
 
-      API.Mock
-      |> allow(pid, test_genserver)
-      |> expect(:request, fn client, method, url, opts ->
+      expect(API.Mock, :request, fn client, method, url, opts ->
         send(pid, opts)
         API.Stub.request(client, method, url, opts)
       end)
 
-      run_and_catch_exit(test_genserver, fn ->
-        raise "Hello World"
-      end)
+      LoggerHandlerKit.Act.genserver_crash(:exit_with_struct)
+      LoggerHandlerKit.Assert.assert_logged(ref)
 
       assert_receive [
         {:path_params, [channel_id: "occurrences_channel_id"]},
@@ -513,46 +555,14 @@ defmodule DiscoLog.LoggerHandlerTest do
                }
              } = decode_body(body)
 
-      assert message =~ "Hello World"
-      assert thread_name =~ "Elixir.RuntimeError"
-    end
-
-    test "an exit with a struct is reported nicely",
-         %{test_genserver: test_genserver} do
-      pid = self()
-
-      API.Mock
-      |> allow(pid, test_genserver)
-      |> expect(:request, fn client, method, url, opts ->
-        send(pid, opts)
-        API.Stub.request(client, method, url, opts)
-      end)
-
-      run_and_catch_exit(test_genserver, fn ->
-        {:stop, %Mint.HTTP1{}, :no_state}
-      end)
-
-      assert_receive [
-        {:path_params, [channel_id: "occurrences_channel_id"]},
-        {:form_multipart, body}
-      ]
-
-      assert %{
-               payload_json: %{
-                 applied_tags: [],
-                 message: %{content: message},
-                 name: thread_name
-               }
-             } = decode_body(body)
-
-      assert message =~ "** (stop) %Mint.HTTP1{"
+      assert message =~ "**Reason:** `** (stop) %LoggerHandlerKit.FakeStruct{hello: \"world\"}`"
       assert thread_name =~ "genserver"
     end
 
     @tag config: [enable_presence: true]
     test "GenServer crash should not crash the logger handler", %{
-      config: config,
-      test_genserver: test_genserver
+      handler_ref: handler_ref,
+      config: config
     } do
       pid = self()
       ref1 = make_ref()
@@ -563,9 +573,7 @@ defmodule DiscoLog.LoggerHandlerTest do
         {:error, nil, %Mint.TransportError{reason: :closed}}
       end)
 
-      API.Mock
-      |> allow(pid, test_genserver)
-      |> expect(:request, 2, fn
+      expect(API.Mock, :request, 2, fn
         client, method, "/channels/:channel_id/threads" = url, opts ->
           send(pid, {ref1, opts})
           API.Stub.request(client, method, url, opts)
@@ -580,6 +588,8 @@ defmodule DiscoLog.LoggerHandlerTest do
         DiscoLog.Registry.via(config.supervisor_name, DiscoLog.Presence) |> GenServer.whereis()
 
       send(pid, {:ssl, :fake_ssl_closed})
+
+      LoggerHandlerKit.Assert.assert_logged(handler_ref)
 
       # Wait until Presence complete the crash to avoid race conditions
       assert_receive {^ref2, _}
@@ -606,23 +616,21 @@ defmodule DiscoLog.LoggerHandlerTest do
                "GenServer %{} terminating: ** (stop) {:error, nil, %Mint.TransportError{reason: :closed}}"
     end
 
-    test "GenServer timeout is reported", %{test_genserver: test_genserver} do
+    test "GenServer timeout is reported", %{handler_ref: ref} do
       pid = self()
 
-      API.Mock
-      |> allow(pid, test_genserver)
-      |> expect(:request, fn client, method, url, opts ->
+      expect(API.Mock, :request, fn client, method, url, opts ->
         send(pid, opts)
         API.Stub.request(client, method, url, opts)
       end)
 
+      {:ok, pid} = LoggerHandlerKit.GenServer.start(nil)
+
       Task.start(fn ->
-        DiscoLog.TestGenServer.run(
-          test_genserver,
-          fn -> Process.sleep(:infinity) end,
-          _timeout = 0
-        )
+        GenServer.call(pid, {:run, fn -> Process.sleep(:infinity) end}, 0)
       end)
+
+      LoggerHandlerKit.Assert.assert_logged(ref)
 
       assert_receive [
         {:path_params, [channel_id: "occurrences_channel_id"]},
@@ -644,8 +652,22 @@ defmodule DiscoLog.LoggerHandlerTest do
     end
   end
 
-  defp run_and_catch_exit(test_genserver_pid, fun) do
-    catch_exit(DiscoLog.TestGenServer.run(test_genserver_pid, fun))
+  describe "sasl reports" do
+    @describetag handle_sasl_reports: true
+
+    test "reports crashed c:GenServer.init/1", %{handler_ref: ref} do
+      pid = self()
+
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
+      end)
+
+      LoggerHandlerKit.Act.genserver_init_crash()
+      LoggerHandlerKit.Assert.assert_logged(ref)
+
+      assert_receive [{:path_params, [channel_id: "occurrences_channel_id"]} | _]
+    end
   end
 
   defp decode_body(body) do
