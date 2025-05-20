@@ -28,6 +28,19 @@ defmodule DiscoLog.Discord.API.Client do
       url: url
     )
     |> Req.merge(opts)
+    |> then(fn request ->
+      request
+      |> Req.Request.fetch_option(:form_multipart)
+      |> case do
+        {:ok, fields} ->
+          Req.merge(request,
+            form_multipart: Keyword.update!(fields, :payload_json, &Jason.encode_to_iodata!/1)
+          )
+
+        :error ->
+          request
+      end
+    end)
     |> Req.request()
   end
 end

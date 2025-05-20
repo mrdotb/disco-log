@@ -11,6 +11,7 @@ defmodule DiscoLog.Discord do
           threads
           |> Enum.filter(&(&1["parent_id"] == occurrences_channel_id))
           |> Enum.map(&{Prepare.fingerprint_from_thread_name(&1["name"]), &1["id"]})
+          |> Enum.reject(fn {fingerprint, _} -> is_nil(fingerprint) end)
           |> Map.new()
 
         {:ok, active_threads}

@@ -43,7 +43,7 @@ defmodule DiscoLog.Integrations.Oban do
   end
 
   def handle_event([:oban, :job, :exception], _measurements, metadata, config) do
-    %{reason: exception, stacktrace: stacktrace, job: job} = metadata
+    %{kind: kind, reason: reason, stacktrace: stacktrace, job: job} = metadata
     state = Map.get(metadata, :state, :failure)
 
     context = %{
@@ -58,11 +58,6 @@ defmodule DiscoLog.Integrations.Oban do
       }
     }
 
-    stacktrace =
-      if stacktrace == [],
-        do: [{String.to_existing_atom("Elixir." <> job.worker), :perform, 2, []}],
-        else: stacktrace
-
-    DiscoLog.report(exception, stacktrace, context, config)
+    DiscoLog.report(kind, reason, stacktrace, context, config)
   end
 end

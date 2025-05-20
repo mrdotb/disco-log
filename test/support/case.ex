@@ -2,22 +2,6 @@ defmodule DiscoLog.Test.Case do
   @moduledoc false
   use ExUnit.CaseTemplate
 
-  @config [
-    otp_app: :disco_log,
-    token: "mytoken",
-    guild_id: "guild_id",
-    category_id: "category_id",
-    occurrences_channel_id: "occurrences_channel_id",
-    info_channel_id: "info_channel_id",
-    error_channel_id: "error_channel_id",
-    discord_client_module: DiscoLog.Discord.API.Mock,
-    enable_presence: false,
-    enable_go_to_repo: true,
-    go_to_repo_top_modules: ["DiscoLog"],
-    repo_url: "https://github.com/mrdotb/disco-log/blob",
-    git_sha: "main"
-  ]
-
   using do
     quote do
       import DiscoLog.Test.Case
@@ -33,31 +17,15 @@ defmodule DiscoLog.Test.Case do
   end
 
   @doc """
-  Builds an error produced by the given function.
-  """
-  def build_error(fun) do
-    fun.()
-  rescue
-    exception ->
-      DiscoLog.Error.new(exception, __STACKTRACE__, %{}, DiscoLog.Config.validate!(@config))
-  catch
-    kind, reason ->
-      DiscoLog.Error.new({kind, reason}, __STACKTRACE__, %{}, DiscoLog.Config.validate!(@config))
-  end
-
-  @doc """
   Reports the error produced by the given function.
   """
   def report_error(fun) do
     occurrence =
       try do
         fun.()
-      rescue
-        exception ->
-          DiscoLog.report(exception, __STACKTRACE__)
       catch
         kind, reason ->
-          DiscoLog.report({kind, reason}, __STACKTRACE__)
+          DiscoLog.report(kind, reason, __STACKTRACE__)
       end
 
     occurrence

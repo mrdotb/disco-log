@@ -29,12 +29,11 @@ defmodule DiscoLog.ApplicationTest do
 
     assert [
              {DiscoLog.Presence, presence_pid, :worker, _},
-             {DiscoLog.Dedupe, dedupe_pid, :worker, _},
              {DiscoLog.Storage, storage_pid, :worker, _},
              {DiscoLog.Registry, registry_pid, :supervisor, _}
            ] = Supervisor.which_children(pid)
 
-    for pid <- [dedupe_pid, storage_pid, registry_pid, presence_pid] do
+    for pid <- [storage_pid, registry_pid, presence_pid] do
       assert :sys.get_status(pid)
     end
   end
