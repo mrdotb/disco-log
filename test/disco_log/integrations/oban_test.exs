@@ -28,27 +28,25 @@ defmodule DiscoLog.ObanTest do
 
     assert_receive [
       {:path_params, [channel_id: "occurrences_channel_id"]},
-      {:form_multipart, multipart}
+      {:form_multipart, [payload_json: body]}
     ]
 
-    assert {context_json, [filename: "context.json"]} = multipart[:context]
-
     assert %{
-             "args" => %{"foo" => "bar"},
-             "attempt" => 1,
-             "id" => 123,
-             "priority" => 1,
-             "queue" => "default",
-             "state" => "failure",
-             "worker" => "Test.Worker"
-           } = Jason.decode!(context_json)["oban"]
-
-    assert %{
-             "message" => %{
-               "content" => _
-             },
-             "name" => <<_::binary-size(16)>> <> " Elixir.RuntimeError"
-           } = Jason.decode!(multipart[:payload_json])
+             name: <<_::binary-size(7)>> <> "** (RuntimeError) Exception!",
+             applied_tags: ["stub_oban_tag_id"],
+             message: %{
+               components: [
+                 %{
+                   content: "**Kind:** `RuntimeError`\n**Reason:** `Exception!`" <> _
+                 },
+                 %{
+                   type: 10,
+                   content:
+                     "```elixir\n%{\n  \"oban\" => %{\n    \"args\" => %{foo: \"bar\"},\n    \"attempt\" => 1,\n    \"id\" => 123,\n    \"priority\" => 1,\n    \"queue\" => :default,\n    \"state\" => :failure,\n    \"worker\" => :\"Test.Worker\"\n  }\n}\n```"
+                 }
+               ]
+             }
+           } = body
   end
 
   defp sample_metadata do

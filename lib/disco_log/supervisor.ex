@@ -6,7 +6,6 @@ defmodule DiscoLog.Supervisor do
   use Supervisor
 
   alias DiscoLog.Storage
-  alias DiscoLog.Dedupe
   alias DiscoLog.Presence
 
   def child_spec(config) do
@@ -20,7 +19,7 @@ defmodule DiscoLog.Supervisor do
     )
   end
 
-  @spec start_link(DiscoLog.Config.config()) :: Supervisor.on_start()
+  @spec start_link(DiscoLog.Config.t()) :: Supervisor.on_start()
   def start_link(config) do
     callers = Process.get(:"$callers", [])
     Supervisor.start_link(__MODULE__, {config, callers}, name: config.supervisor_name)
@@ -35,8 +34,7 @@ defmodule DiscoLog.Supervisor do
          supervisor_name: config.supervisor_name,
          discord_client: config.discord_client,
          guild_id: config.guild_id,
-         occurrences_channel_id: config.occurrences_channel_id},
-        {Dedupe, supervisor_name: config.supervisor_name}
+         occurrences_channel_id: config.occurrences_channel_id}
       ] ++ maybe_presence(config)
 
     Process.put(:"$callers", callers)

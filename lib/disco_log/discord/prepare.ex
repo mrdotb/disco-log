@@ -1,99 +1,133 @@
 defmodule DiscoLog.Discord.Prepare do
   @moduledoc false
-  alias DiscoLog.Encoder
 
-  def prepare_message(message, metadata) when is_binary(message) do
-    [
-      payload_json: Encoder.encode!(%{content: message})
-    ]
-    |> maybe_put_metadata(metadata)
+  @text_display_type 10
+  @components_flag 32_768
+  @max_title_length 100
+  @displayed_message_limit 4000
+  @context_overhead String.length("```elixir\n\n```")
+  @file_attachment_limit 8_000_000
+
+  def prepare_message(message, context) do
+    context_budget = context_budget(message)
+
+    base_message = %{
+      flags: @components_flag,
+      components: [
+        %{
+          type: @text_display_type,
+          content: message
+        }
+      ]
+    }
+
+    append_context(base_message, prepare_context(context, context_budget))
   end
 
-  def prepare_message(message, metadata) when is_map(message) do
-    [
-      message: {Encoder.encode!(message, pretty: true), filename: "message.json"}
-    ]
-    |> maybe_put_metadata(metadata)
+  def prepare_occurrence(error, context, applied_tags) do
+    content_component = prepare_main_content(error)
+    context_budget = context_budget(content_component.content)
+
+    %{
+      name: String.slice(error.fingerprint <> " " <> error.display_title, 0, @max_title_length),
+      applied_tags: applied_tags,
+      message: %{
+        flags: @components_flag,
+        components: []
+      }
+    }
+    |> append_component(content_component)
+    |> append_context(prepare_context(context, context_budget))
   end
 
-  def prepare_occurrence(error, tags) do
-    [
-      payload_json:
-        Encoder.encode!(%{
-          message: prepare_error_message(error),
-          name: thread_name(error),
-          applied_tags: tags
-        })
-    ]
-    |> put_stacktrace(error.stacktrace)
-    |> maybe_put_context(error.context)
+  def prepare_occurrence_message(error, context) do
+    content_component = prepare_main_content(error)
+    context_budget = context_budget(content_component.content)
+
+    %{
+      flags: @components_flag,
+      components: []
+    }
+    |> append_component(content_component)
+    |> append_context(prepare_context(context, context_budget))
   end
 
-  def prepare_occurrence_message(error) do
-    [
-      payload_json: Encoder.encode!(prepare_error_message(error))
-    ]
-    |> put_stacktrace(error.stacktrace)
-    |> maybe_put_context(error.context)
-  end
-
-  def fingerprint_from_thread_name(<<fingerprint::binary-size(16)>> <> " " <> _rest),
+  def fingerprint_from_thread_name(<<fingerprint::binary-size(6)>> <> " " <> _rest),
     do: fingerprint
 
-  # Thread name are limited by 100 characters we use the 16 first characters for the fingerprint
-  defp thread_name(error), do: "#{error.fingerprint} #{error.kind}"
+  def fingerprint_from_thread_name(_), do: nil
 
-  defp maybe_put_metadata(fields, metadata) when map_size(metadata) == 0, do: fields
+  defp prepare_main_content(error) do
+    source_line =
+      case error do
+        %{display_source: nil} -> nil
+        %{source_url: nil} -> "**Source:** `#{error.display_source}`"
+        _ -> "**Source:** [#{error.display_source}](#{error.source_url})"
+      end
 
-  defp maybe_put_metadata(fields, metadata) do
-    Keyword.put(
-      fields,
-      :metadata,
-      {serialize_metadata(metadata), filename: "metadata.ex"}
-    )
-  end
+    kind_line =
+      if error.display_kind, do: "**Kind:** `#{error.display_kind}`"
 
-  defp serialize_metadata(metadata) do
-    metadata
-    |> inspect(pretty: true, limit: :infinity, printable_limit: :infinity)
-    # 8MB is the max file attachment limit
-    |> String.byte_slice(0, 8_000_000)
-  end
+    content =
+      [
+        kind_line,
+        "**Reason:** `#{error.display_short_error}`",
+        source_line,
+        "```\n#{error.display_full_error}\n```"
+      ]
+      |> Enum.reject(&is_nil/1)
+      |> Enum.join("\n")
 
-  defp prepare_error_message(error) do
     %{
-      content: """
-        **At:** <t:#{System.os_time(:second)}:T>
-        **Kind:** `#{error.kind}`
-        **Reason:** `#{error.reason}`
-        **Source Line:** #{source_line(error)}
-        **Source Function:** `#{error.source_function}`
-        **Fingerprint:** `#{error.fingerprint}`
-      """
+      type: @text_display_type,
+      content: content
     }
   end
 
-  # source line can be a link to the source code if source_url is set
-  defp source_line(error) do
-    if error.source_url do
-      # we wrap the url with `<>` to prevent an embed preview to be created
-      "[`#{error.source_line}`](<#{error.source_url}>)"
-    else
-      "`#{error.source_line}`"
+  defp prepare_context(_, context_budget) when context_budget <= 0, do: nil
+  defp prepare_context(nil, _context_budget), do: nil
+
+  defp prepare_context(context, _context_budget) when is_map(context) and map_size(context) == 0,
+    do: nil
+
+  defp prepare_context(context, context_budget) do
+    context
+    |> inspect(pretty: true, limit: :infinity, printable_limit: :infinity)
+    |> String.split_at(context_budget)
+    |> case do
+      {full, ""} ->
+        %{
+          type: @text_display_type,
+          content: "```elixir\n#{full}\n```"
+        }
+
+      {left, right} ->
+        {String.byte_slice(left <> right, 0, @file_attachment_limit), [filename: "context.txt"]}
     end
   end
 
-  defp put_stacktrace(fields, stacktrace) do
-    Keyword.put(fields, :stacktrace, {to_string(stacktrace), filename: "stacktrace.ex"})
+  defp append_component(%{components: components} = message, %{} = component) do
+    put_in(message, [:components], components ++ [component])
   end
 
-  defp maybe_put_context(fields, context) when map_size(context) == 0, do: fields
-
-  defp maybe_put_context(fields, context) do
-    Keyword.put(
-      fields,
-      :context,
-      {Encoder.encode!(context, pretty: true), filename: "context.json"}
-    )
+  defp append_component(%{message: %{components: components}} = message, %{} = component) do
+    put_in(message, [:message, :components], components ++ [component])
   end
+
+  defp append_component(message, _), do: message
+
+  defp append_context(message, {_, _} = context_attachment) do
+    [
+      payload_json:
+        append_component(message, %{type: 13, file: %{url: "attachment://context.txt"}}),
+      context: context_attachment
+    ]
+  end
+
+  defp append_context(message, context_component) do
+    [payload_json: append_component(message, context_component)]
+  end
+
+  defp context_budget(main_content),
+    do: @displayed_message_limit - String.length(main_content) - @context_overhead
 end

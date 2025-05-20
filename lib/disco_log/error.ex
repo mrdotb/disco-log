@@ -1,118 +1,158 @@
 defmodule DiscoLog.Error do
-  @moduledoc """
-  Struct for error or exception.
-  """
+  @moduledoc false
+  defstruct [
+    :kind,
+    :reason,
+    :stacktrace,
+    :display_title,
+    :display_kind,
+    :display_short_error,
+    :display_full_error,
+    :display_source,
+    :fingerprint_basis,
+    :fingerprint,
+    :source_url
+  ]
 
-  alias __MODULE__
-  alias DiscoLog.Stacktrace
+  @type t() :: %__MODULE__{}
 
-  @type t :: %Error{
-          kind: atom() | String.t(),
-          reason: String.t(),
-          source_line: String.t(),
-          source_function: String.t(),
-          context: any(),
-          stacktrace: Stacktrace.t(),
-          fingerprint: String.t(),
-          source_url: String.t() | nil
-        }
+  @title_limit 80
+  @short_error_limit 60
 
-  defstruct ~w(kind reason source_line source_function context stacktrace fingerprint source_url)a
+  def new({{:nocatch, reason}, stacktrace}), do: new(:throw, reason, stacktrace)
+  def new({reason, stacktrace}) when is_exception(reason), do: new(:error, reason, stacktrace)
+  def new({reason, stacktrace}), do: new(:exit, reason, stacktrace)
 
-  def new(exception, stacktrace, context, config) do
-    {kind, reason} = normalize_exception(exception, stacktrace)
-    stacktrace = Stacktrace.new(stacktrace)
-    source = Stacktrace.source(stacktrace, config.otp_app)
+  def new(kind, reason, stacktrace) do
+    %__MODULE__{
+      kind: kind,
+      reason: Exception.normalize(kind, reason, stacktrace),
+      stacktrace: stacktrace
+    }
+    |> put_display_kind()
+    |> put_display_short_error()
+    |> put_display_full_error()
+    |> put_display_title()
+  end
 
-    source_line =
-      if is_map(source) and is_binary(source.file) and source.file != "",
-        do: "#{source.file}:#{source.line}",
-        else: "nofile"
+  def enrich(%__MODULE__{} = error, config) do
+    maybe_last_app_entry =
+      case error.stacktrace do
+        [first | _] ->
+          Enum.find(error.stacktrace, first, fn {module, _, _, _} ->
+            module in config.in_app_modules
+          end)
 
-    source_function =
-      if is_map(source),
-        do: "#{source.module}.#{source.function}/#{source.arity}",
-        else: "nofunction"
-
-    source_url =
-      with true <- config.enable_go_to_repo,
-           %{file: file} = app_source when is_binary(file) and file != "" <-
-             Stacktrace.app_source(stacktrace, config.otp_app, config.go_to_repo_top_modules) do
-        get_source_url(config, app_source)
-      else
-        _ -> nil
+        _ ->
+          nil
       end
 
-    %Error{
-      kind: kind,
-      reason: reason,
-      source_line: source_line,
-      source_function: source_function,
-      context: context,
-      stacktrace: stacktrace,
-      fingerprint: fingerprint(kind, source_line, source_function),
-      source_url: source_url
+    display_source =
+      if maybe_last_app_entry, do: Exception.format_stacktrace_entry(maybe_last_app_entry)
+
+    source_url = compose_source_url(maybe_last_app_entry, config)
+
+    fingeprintable_error =
+      case error do
+        %{reason: %module{} = exception} when is_exception(exception) ->
+          module
+
+        %{kind: kind} ->
+          kind
+      end
+
+    fingerprintable_stacktrace_entry =
+      with {module, function, args, opts} when is_list(args) <- maybe_last_app_entry do
+        {module, function, length(args), opts}
+      end
+
+    basis = {fingeprintable_error, fingerprintable_stacktrace_entry}
+
+    %{
+      error
+      | fingerprint_basis: basis,
+        fingerprint: fingerprint(basis),
+        source_url: source_url,
+        display_source: display_source
     }
   end
 
-  defp normalize_exception(%struct{} = ex, _stacktrace) when is_exception(ex) do
-    {to_string(struct), Exception.message(ex)}
+  def fingerprint(basis) do
+    hash = :erlang.phash2(basis, 2 ** 32)
+    Base.url_encode64(<<hash::32>>, padding: false)
   end
 
-  defp normalize_exception({kind, reason}, _stacktrace)
-       when is_binary(kind) and is_binary(reason) do
-    {kind, reason}
-  end
-
-  defp normalize_exception({kind, reason}, _stacktrace)
-       when is_atom(kind) and is_binary(reason) do
-    {to_string(kind), reason}
-  end
-
-  defp normalize_exception({kind, ex}, stacktrace) do
-    case Exception.normalize(kind, ex, stacktrace) do
-      %struct{} = ex ->
-        {to_string(struct), Exception.message(ex)}
-
-      {mod, fun, args} ->
-        {to_string(kind),
-         to_string(mod) <> "." <> to_string(fun) <> "/" <> to_string(Enum.count(args))}
-
-      other ->
-        {to_string(kind), to_string(other)}
+  defp compose_source_url({module, _, _, opts}, %{enable_go_to_repo: true} = config) do
+    with true <- in_app_module?(module, config),
+         file when not is_nil(file) <- Keyword.get(opts, :file) do
+      "#{config[:repo_url]}/#{config[:git_sha]}/#{file}#L#{opts[:line]}"
+    else
+      _ -> nil
     end
   end
 
-  defp normalize_exception(:bad_exit, []) do
-    {"exit", "bad_exit"}
+  defp compose_source_url(_, _), do: nil
+
+  defp in_app_module?(module, config) do
+    with false <- module in config.in_app_modules do
+      [top_level | _] = Module.split(module)
+      top_level in config.go_to_repo_top_modules
+    end
   end
 
-  defp normalize_exception(reason, _other) when is_atom(reason) do
-    {reason, "unknow"}
+  defp put_display_kind(%__MODULE__{} = error) do
+    if is_exception(error.reason) do
+      %{error | display_kind: inspect(error.reason.__struct__)}
+    else
+      error
+    end
   end
 
-  # Fingerprint is used to group the similar errors together
-  # Original implementation from https://github.com/elixir-error-tracker/error-tracker/blob/main/lib/error_tracker/schemas/error.ex#L40
-  defp fingerprint(kind, source_line, source_function) do
-    values = Enum.join([kind, source_line, source_function])
-    hash = :crypto.hash(:sha256, values)
-    Base.encode16(hash) |> binary_part(0, 16)
+  defp put_display_short_error(%__MODULE__{} = error) do
+    formatted =
+      if is_exception(error.reason) do
+        Exception.message(error.reason)
+      else
+        Exception.format_banner(error.kind, error.reason, error.stacktrace)
+      end
+
+    %{error | display_short_error: to_oneliner(formatted, @short_error_limit)}
   end
 
-  @doc """
-  Used to compare errors for deduplication original implementation from Sentry Elixir
-  https://github.com/getsentry/sentry-elixir/blob/69ac8d0e3f33ff36ab1092bbd346fdb99cf9d061/lib/sentry/event.ex#L613
-  """
-  def hash(%Error{} = error) do
-    :erlang.phash2([
-      error.kind,
-      error.reason,
-      error.stacktrace,
-      error.context
-    ])
+  defp put_display_full_error(%__MODULE__{} = error) do
+    formatted = Exception.format(error.kind, error.reason, error.stacktrace)
+    %{error | display_full_error: formatted}
   end
 
-  defp get_source_url(config, source) do
-    "#{config[:repo_url]}/#{config[:git_sha]}/#{source.file}#L#{source.line}"
+  defp put_display_title(%__MODULE__{} = error) do
+    if is_exception(error.reason) do
+      formatted = Exception.format_banner(error.kind, error.reason, error.stacktrace)
+      %{error | display_title: to_oneliner(formatted, @title_limit)}
+    else
+      %{error | display_title: error.display_short_error}
+    end
+  end
+
+  defp to_oneliner(text, limit) do
+    line =
+      text
+      |> String.split("\n", parts: 2)
+      |> hd()
+
+    truncated =
+      if String.length(line) <= limit do
+        line
+      else
+        line
+        |> String.split(": ", parts: 2)
+        |> hd()
+        |> String.slice(0, limit)
+      end
+
+    if String.length(truncated) < String.length(text) do
+      truncated <> " \u2026"
+    else
+      truncated
+    end
   end
 end

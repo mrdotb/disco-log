@@ -118,12 +118,12 @@ defmodule DiscoLog.Config do
   #{NimbleOptions.docs(@compiled_schema)}
   """
 
-  @type config() :: map()
+  @type t() :: map()
 
   @doc """
   Reads and validates config from global application configuration
   """
-  @spec read!() :: config()
+  @spec read!() :: t()
   def read!() do
     raw_options =
       Application.get_all_env(:disco_log) |> Keyword.take(Keyword.keys(@configuration_schema))
@@ -137,7 +137,7 @@ defmodule DiscoLog.Config do
   @doc """
   See `validate/1`
   """
-  @spec validate!(options :: keyword() | map()) :: config()
+  @spec validate!(options :: keyword() | map()) :: t()
   def validate!(options) do
     {:ok, config} = validate(options)
     config
@@ -147,7 +147,7 @@ defmodule DiscoLog.Config do
   Validates configuration against the schema
   """
   @spec validate(options :: keyword() | map()) ::
-          {:ok, config()} | {:error, NimbleOptions.ValidationError.t()}
+          {:ok, t()} | {:error, NimbleOptions.ValidationError.t()}
   def validate(%{discord_client: _} = config) do
     config
     |> Map.delete(:discord_client)
@@ -163,6 +163,10 @@ defmodule DiscoLog.Config do
         |> then(fn config ->
           client = config.discord_client_module.client(config.token)
           Map.put(config, :discord_client, %{client | log?: config.enable_discord_log})
+        end)
+        |> then(fn config ->
+          modules = Application.spec(config.otp_app, :modules) || []
+          Map.put(config, :in_app_modules, modules)
         end)
 
       {:ok, config}

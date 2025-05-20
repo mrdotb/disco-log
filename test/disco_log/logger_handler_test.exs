@@ -25,8 +25,12 @@ defmodule DiscoLog.LoggerHandlerTest do
       LoggerHandlerKit.Act.string_message()
       LoggerHandlerKit.Assert.assert_logged(ref)
 
-      assert_receive [{:path_params, [channel_id: "info_channel_id"]}, {:form_multipart, body}]
-      assert %{payload_json: %{content: "Hello World"}} = decode_body(body)
+      assert_receive [
+        {:path_params, [channel_id: "info_channel_id"]},
+        {:form_multipart, [payload_json: body]}
+      ]
+
+      assert %{components: [%{type: 10, content: "Hello World"}]} = body
     end
 
     test "charlist", %{handler_ref: ref} do
@@ -40,8 +44,12 @@ defmodule DiscoLog.LoggerHandlerTest do
       LoggerHandlerKit.Act.charlist_message()
       LoggerHandlerKit.Assert.assert_logged(ref)
 
-      assert_receive [{:path_params, [channel_id: "info_channel_id"]}, {:form_multipart, body}]
-      assert %{payload_json: %{content: "Hello World"}} = decode_body(body)
+      assert_receive [
+        {:path_params, [channel_id: "info_channel_id"]},
+        {:form_multipart, [payload_json: body]}
+      ]
+
+      assert %{components: [%{type: 10, content: "Hello World"}]} = body
     end
 
     test "chardata", %{handler_ref: ref} do
@@ -55,8 +63,12 @@ defmodule DiscoLog.LoggerHandlerTest do
       LoggerHandlerKit.Act.chardata_message(:improper)
       LoggerHandlerKit.Assert.assert_logged(ref)
 
-      assert_receive [{:path_params, [channel_id: "info_channel_id"]}, {:form_multipart, body}]
-      assert %{payload_json: %{content: "Hello World"}} = decode_body(body)
+      assert_receive [
+        {:path_params, [channel_id: "info_channel_id"]},
+        {:form_multipart, [payload_json: body]}
+      ]
+
+      assert %{components: [%{type: 10, content: "Hello World"}]} = body
     end
 
     test "map report", %{handler_ref: ref} do
@@ -70,10 +82,12 @@ defmodule DiscoLog.LoggerHandlerTest do
       LoggerHandlerKit.Act.map_report()
       LoggerHandlerKit.Assert.assert_logged(ref)
 
-      assert_receive [{:path_params, [channel_id: "info_channel_id"]}, {:form_multipart, body}]
+      assert_receive [
+        {:path_params, [channel_id: "info_channel_id"]},
+        {:form_multipart, [payload_json: body]}
+      ]
 
-      assert %{message: {%{hello: "world"}, [filename: "message.json"]}} =
-               decode_body(body)
+      assert %{components: [%{type: 10, content: "%{hello: \"world\"}"}]} = body
     end
 
     test "keyword report", %{handler_ref: ref} do
@@ -87,10 +101,12 @@ defmodule DiscoLog.LoggerHandlerTest do
       LoggerHandlerKit.Act.keyword_report()
       LoggerHandlerKit.Assert.assert_logged(ref)
 
-      assert_receive [{:path_params, [channel_id: "info_channel_id"]}, {:form_multipart, body}]
+      assert_receive [
+        {:path_params, [channel_id: "info_channel_id"]},
+        {:form_multipart, [payload_json: body]}
+      ]
 
-      assert %{message: {%{hello: "world"}, [filename: "message.json"]}} =
-               decode_body(body)
+      assert %{components: [%{type: 10, content: "[hello: \"world\"]"}]} = body
     end
 
     test "struct report", %{handler_ref: ref} do
@@ -104,14 +120,16 @@ defmodule DiscoLog.LoggerHandlerTest do
       LoggerHandlerKit.Act.struct_report()
       LoggerHandlerKit.Assert.assert_logged(ref)
 
-      assert_receive [{:path_params, [channel_id: "info_channel_id"]}, {:form_multipart, body}]
+      assert_receive [
+        {:path_params, [channel_id: "info_channel_id"]},
+        {:form_multipart, [payload_json: body]}
+      ]
 
       assert %{
-               message:
-                 {%{__struct__: "Elixir.LoggerHandlerKit.FakeStruct", hello: "world"},
-                  [filename: "message.json"]}
-             } =
-               decode_body(body)
+               components: [
+                 %{type: 10, content: "%LoggerHandlerKit.FakeStruct{hello: \"world\"}"}
+               ]
+             } = body
     end
 
     test "erlang io format", %{handler_ref: ref} do
@@ -125,9 +143,65 @@ defmodule DiscoLog.LoggerHandlerTest do
       LoggerHandlerKit.Act.io_format()
       LoggerHandlerKit.Assert.assert_logged(ref)
 
-      assert_receive [{:path_params, [channel_id: "info_channel_id"]}, {:form_multipart, body}]
+      assert_receive [
+        {:path_params, [channel_id: "info_channel_id"]},
+        {:form_multipart, [payload_json: body]}
+      ]
 
-      assert %{payload_json: %{content: "Hello World"}} = decode_body(body)
+      assert %{components: [%{type: 10, content: "Hello World"}]} = body
+    end
+
+    @tag config: [metadata: [:extra]]
+    test "metadata is attached if configured", %{handler_ref: ref} do
+      pid = self()
+
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
+      end)
+
+      Logger.metadata(extra: "Hello")
+      LoggerHandlerKit.Act.string_message()
+      LoggerHandlerKit.Assert.assert_logged(ref)
+
+      assert_receive [
+        {:path_params, [channel_id: "info_channel_id"]},
+        {:form_multipart, [payload_json: body]}
+      ]
+
+      assert %{
+               components: [
+                 %{type: 10, content: "Hello World"},
+                 %{type: 10, content: "```elixir\n%{extra: \"Hello\"}\n```"}
+               ]
+             } = body
+    end
+
+    @tag config: [metadata: [:extra]]
+    test "context is not attached for log messages", %{handler_ref: ref} do
+      pid = self()
+
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
+      end)
+
+      Logger.metadata(extra: "Hello")
+      DiscoLog.Context.set(:foo, "bar")
+      LoggerHandlerKit.Act.string_message()
+      LoggerHandlerKit.Assert.assert_logged(ref)
+
+      assert_receive [
+        {:path_params, [channel_id: "info_channel_id"]},
+        {:form_multipart, [payload_json: body]}
+      ]
+
+      assert %{
+               components: [
+                 %{type: 10, content: "Hello World"},
+                 %{type: 10, content: "```elixir\n%{extra: \"Hello\"}\n```"}
+               ]
+             } = body
     end
   end
 
@@ -143,8 +217,12 @@ defmodule DiscoLog.LoggerHandlerTest do
       Logger.error("Error message")
       LoggerHandlerKit.Assert.assert_logged(ref)
 
-      assert_receive [{:path_params, [channel_id: "error_channel_id"]}, {:form_multipart, body}]
-      assert %{payload_json: %{content: "Error message"}} = decode_body(body)
+      assert_receive [
+        {:path_params, [channel_id: "error_channel_id"]},
+        {:form_multipart, [payload_json: body]}
+      ]
+
+      assert %{components: [%{type: 10, content: "Error message"}]} = body
     end
 
     test "charlist", %{handler_ref: ref} do
@@ -158,8 +236,12 @@ defmodule DiscoLog.LoggerHandlerTest do
       Logger.error(~c"Hello World")
       LoggerHandlerKit.Assert.assert_logged(ref)
 
-      assert_receive [{:path_params, [channel_id: "error_channel_id"]}, {:form_multipart, body}]
-      assert %{payload_json: %{content: "Hello World"}} = decode_body(body)
+      assert_receive [
+        {:path_params, [channel_id: "error_channel_id"]},
+        {:form_multipart, [payload_json: body]}
+      ]
+
+      assert %{components: [%{type: 10, content: "Hello World"}]} = body
     end
 
     test "chardata", %{handler_ref: ref} do
@@ -173,8 +255,12 @@ defmodule DiscoLog.LoggerHandlerTest do
       Logger.error([?H, ["ello", []], 32 | ~c"World"])
       LoggerHandlerKit.Assert.assert_logged(ref)
 
-      assert_receive [{:path_params, [channel_id: "error_channel_id"]}, {:form_multipart, body}]
-      assert %{payload_json: %{content: "Hello World"}} = decode_body(body)
+      assert_receive [
+        {:path_params, [channel_id: "error_channel_id"]},
+        {:form_multipart, [payload_json: body]}
+      ]
+
+      assert %{components: [%{type: 10, content: "Hello World"}]} = body
     end
 
     test "map", %{handler_ref: ref} do
@@ -188,10 +274,12 @@ defmodule DiscoLog.LoggerHandlerTest do
       Logger.error(%{message: "Error message"})
       LoggerHandlerKit.Assert.assert_logged(ref)
 
-      assert_receive [{:path_params, [channel_id: "error_channel_id"]}, {:form_multipart, body}]
+      assert_receive [
+        {:path_params, [channel_id: "error_channel_id"]},
+        {:form_multipart, [payload_json: body]}
+      ]
 
-      assert %{message: {%{message: "Error message"}, [filename: "message.json"]}} =
-               decode_body(body)
+      assert %{components: [%{type: 10, content: "%{message: \"Error message\"}"}]} = body
     end
 
     test "keyword", %{handler_ref: ref} do
@@ -205,10 +293,12 @@ defmodule DiscoLog.LoggerHandlerTest do
       Logger.error(message: "Error message")
       LoggerHandlerKit.Assert.assert_logged(ref)
 
-      assert_receive [{:path_params, [channel_id: "error_channel_id"]}, {:form_multipart, body}]
+      assert_receive [
+        {:path_params, [channel_id: "error_channel_id"]},
+        {:form_multipart, [payload_json: body]}
+      ]
 
-      assert %{message: {%{message: "Error message"}, [filename: "message.json"]}} =
-               decode_body(body)
+      assert %{components: [%{type: 10, content: "[message: \"Error message\"]"}]} = body
     end
 
     test "struct", %{handler_ref: ref} do
@@ -222,13 +312,16 @@ defmodule DiscoLog.LoggerHandlerTest do
       Logger.error(%LoggerHandlerKit.FakeStruct{hello: "world"})
       LoggerHandlerKit.Assert.assert_logged(ref)
 
-      assert_receive [{:path_params, [channel_id: "error_channel_id"]}, {:form_multipart, body}]
+      assert_receive [
+        {:path_params, [channel_id: "error_channel_id"]},
+        {:form_multipart, [payload_json: body]}
+      ]
 
       assert %{
-               message:
-                 {%{__struct__: "Elixir.LoggerHandlerKit.FakeStruct", hello: "world"},
-                  [filename: "message.json"]}
-             } = decode_body(body)
+               components: [
+                 %{type: 10, content: "%LoggerHandlerKit.FakeStruct{hello: \"world\"}"}
+               ]
+             } = body
     end
 
     test "erlang io format", %{handler_ref: ref} do
@@ -242,9 +335,12 @@ defmodule DiscoLog.LoggerHandlerTest do
       :logger.error("Hello ~s", ["World"])
       LoggerHandlerKit.Assert.assert_logged(ref)
 
-      assert_receive [{:path_params, [channel_id: "error_channel_id"]}, {:form_multipart, body}]
+      assert_receive [
+        {:path_params, [channel_id: "error_channel_id"]},
+        {:form_multipart, [payload_json: body]}
+      ]
 
-      assert %{payload_json: %{content: "Hello World"}} = decode_body(body)
+      assert %{components: [%{type: 10, content: "Hello World"}]} = body
     end
 
     test "task error exception", %{handler_ref: ref} do
@@ -260,19 +356,20 @@ defmodule DiscoLog.LoggerHandlerTest do
 
       assert_receive [
         {:path_params, [channel_id: "occurrences_channel_id"]},
-        {:form_multipart, body}
+        {:form_multipart, [payload_json: body]}
       ]
 
       assert %{
-               payload_json: %{
-                 applied_tags: [],
-                 message: %{content: message},
-                 name: thread_name
-               }
-             } = decode_body(body)
+               applied_tags: [],
+               message: %{
+                 components: [
+                   %{content: message}
+                 ]
+               },
+               name: <<_::binary-size(7)>> <> "** (RuntimeError) oops"
+             } = body
 
-      assert message =~ "oops"
-      assert thread_name =~ "Elixir.RuntimeError"
+      assert message =~ "Task.Supervised.invoke_mfa"
     end
 
     test "task error undefined", %{handler_ref: ref} do
@@ -288,19 +385,22 @@ defmodule DiscoLog.LoggerHandlerTest do
 
       assert_receive [
         {:path_params, [channel_id: "occurrences_channel_id"]},
-        {:form_multipart, body}
+        {:form_multipart, [payload_json: body]}
       ]
 
       assert %{
-               payload_json: %{
-                 applied_tags: [],
-                 message: %{content: message},
-                 name: thread_name
-               }
-             } = decode_body(body)
+               applied_tags: [],
+               message: %{
+                 components: [
+                   %{content: message}
+                 ]
+               },
+               name:
+                 <<_::binary-size(7)>> <>
+                   "** (UndefinedFunctionError) function :module_does_not_exist.undef/0 is undefined …"
+             } = body
 
       assert message =~ "function :module_does_not_exist.undef/0 is undefined"
-      assert thread_name =~ "Elixir.UndefinedFunctionError"
     end
 
     test "task error throw", %{handler_ref: ref} do
@@ -316,19 +416,20 @@ defmodule DiscoLog.LoggerHandlerTest do
 
       assert_receive [
         {:path_params, [channel_id: "occurrences_channel_id"]},
-        {:form_multipart, body}
+        {:form_multipart, [payload_json: body]}
       ]
 
       assert %{
-               payload_json: %{
-                 applied_tags: [],
-                 message: %{content: message},
-                 name: thread_name
-               }
-             } = decode_body(body)
+               applied_tags: [],
+               message: %{
+                 components: [
+                   %{content: message}
+                 ]
+               },
+               name: <<_::binary-size(7)>> <> "** (throw) \"catch!\""
+             } = body
 
-      assert message =~ "**Reason:** `{:nocatch, \"catch!\"}`"
-      assert thread_name =~ "genserver"
+      assert message =~ "LoggerHandlerKit.Act.task_error"
     end
 
     test "task error exit", %{handler_ref: ref} do
@@ -344,19 +445,20 @@ defmodule DiscoLog.LoggerHandlerTest do
 
       assert_receive [
         {:path_params, [channel_id: "occurrences_channel_id"]},
-        {:form_multipart, body}
+        {:form_multipart, [payload_json: body]}
       ]
 
       assert %{
-               payload_json: %{
-                 applied_tags: [],
-                 message: %{content: message},
-                 name: thread_name
-               }
-             } = decode_body(body)
+               applied_tags: [],
+               message: %{
+                 components: [
+                   %{content: message}
+                 ]
+               },
+               name: <<_::binary-size(7)>> <> "** (exit) \"i quit\""
+             } = body
 
-      assert message =~ "**Reason:** `\"i quit\"`"
-      assert thread_name =~ "genserver"
+      assert message =~ "LoggerHandlerKit.Act.task_error"
     end
 
     test "genserver crash exception", %{handler_ref: ref} do
@@ -372,19 +474,20 @@ defmodule DiscoLog.LoggerHandlerTest do
 
       assert_receive [
         {:path_params, [channel_id: "occurrences_channel_id"]},
-        {:form_multipart, body}
+        {:form_multipart, [payload_json: body]}
       ]
 
       assert %{
-               payload_json: %{
-                 applied_tags: [],
-                 message: %{content: message},
-                 name: thread_name
-               }
-             } = decode_body(body)
+               applied_tags: [],
+               message: %{
+                 components: [
+                   %{content: message}
+                 ]
+               },
+               name: <<_::binary-size(7)>> <> "** (RuntimeError) oops"
+             } = body
 
-      assert message =~ "**Reason:** `oops`"
-      assert thread_name =~ "Elixir.RuntimeError"
+      assert message =~ "LoggerHandlerKit.Act.genserver_crash"
     end
 
     test "genserver crash throw", %{handler_ref: ref} do
@@ -400,19 +503,21 @@ defmodule DiscoLog.LoggerHandlerTest do
 
       assert_receive [
         {:path_params, [channel_id: "occurrences_channel_id"]},
-        {:form_multipart, body}
+        {:form_multipart, [payload_json: body]}
       ]
 
       assert %{
-               payload_json: %{
-                 applied_tags: [],
-                 message: %{content: message},
-                 name: thread_name
-               }
-             } = decode_body(body)
+               applied_tags: [],
+               message: %{
+                 components: [
+                   %{content: message}
+                 ]
+               },
+               name: <<_::binary-size(7)>> <> "** (exit) bad return value: \"catch!\""
+             } = body
 
-      assert message =~ "**Reason:** `** (stop) bad return value: \"catch!\"`"
-      assert thread_name =~ "genserver"
+      assert message =~ "GenServer "
+      assert message =~ "terminating"
     end
 
     test "genserver crash abnormal exit", %{handler_ref: ref} do
@@ -434,19 +539,21 @@ defmodule DiscoLog.LoggerHandlerTest do
 
       assert_receive [
         {:path_params, [channel_id: "occurrences_channel_id"]},
-        {:form_multipart, body}
+        {:form_multipart, [payload_json: body]}
       ]
 
       assert %{
-               payload_json: %{
-                 applied_tags: [],
-                 message: %{content: message},
-                 name: thread_name
-               }
-             } = decode_body(body)
+               applied_tags: [],
+               message: %{
+                 components: [
+                   %{content: message}
+                 ]
+               },
+               name: <<_::binary-size(7)>> <> "** (exit) :bad_exit"
+             } = body
 
-      assert message =~ "**Reason:** `** (stop) :bad_exit`"
-      assert thread_name =~ "genserver"
+      assert message =~ "GenServer "
+      assert message =~ "terminating"
     end
 
     test "genserver crash while calling another process", %{handler_ref: ref} do
@@ -472,24 +579,21 @@ defmodule DiscoLog.LoggerHandlerTest do
 
       assert_receive [
         {:path_params, [channel_id: "occurrences_channel_id"]},
-        {:form_multipart, body}
+        {:form_multipart, [payload_json: body]}
       ]
 
       assert %{
-               payload_json: %{
-                 applied_tags: [],
-                 message: %{content: message},
-                 name: thread_name
+               applied_tags: [],
+               message: %{
+                 components: [
+                   %{content: message}
+                 ]
                },
-               context: {%{extra_reason: extra_reason}, _}
-             } = decode_body(body)
+               name: <<_::binary-size(7)>> <> "** (exit) exited in …"
+             } = body
 
-      assert message =~ "genserver_call"
-      assert message =~ "noproc"
-      assert thread_name =~ "genserver_call"
-
-      assert extra_reason =~
-               "** (EXIT) no process: the process is not alive or there's no process currently associated with the given name, possibly because its application isn't started"
+      assert message =~
+               "** (EXIT) no process: the process is not alive or there's no process currently associated with the given name"
     end
 
     test "genserver crash due to timeout calling another genserver", %{handler_ref: ref} do
@@ -513,22 +617,21 @@ defmodule DiscoLog.LoggerHandlerTest do
 
       assert_receive [
         {:path_params, [channel_id: "occurrences_channel_id"]},
-        {:form_multipart, body}
+        {:form_multipart, [payload_json: body]}
       ]
 
       assert %{
-               payload_json: %{
-                 applied_tags: [],
-                 message: %{content: message},
-                 name: thread_name
+               applied_tags: [],
+               message: %{
+                 components: [
+                   %{content: message}
+                 ]
                },
-               context: {%{extra_reason: extra_reason}, _}
-             } = decode_body(body)
+               name: <<_::binary-size(7)>> <> "** (exit) exited in …"
+             } = body
 
-      assert message =~ "genserver_call"
-      assert message =~ "timeout"
-      assert thread_name =~ "genserver_call"
-      assert extra_reason =~ "** (EXIT) time out"
+      assert message =~ "GenServer"
+      assert message =~ "terminating"
     end
 
     test "genserver crash exit with a struct", %{handler_ref: ref} do
@@ -544,19 +647,23 @@ defmodule DiscoLog.LoggerHandlerTest do
 
       assert_receive [
         {:path_params, [channel_id: "occurrences_channel_id"]},
-        {:form_multipart, body}
+        {:form_multipart, [payload_json: body]}
       ]
 
       assert %{
-               payload_json: %{
-                 applied_tags: [],
-                 message: %{content: message},
-                 name: thread_name
-               }
-             } = decode_body(body)
+               applied_tags: [],
+               message: %{
+                 components: [
+                   %{content: message}
+                 ]
+               },
+               name:
+                 <<_::binary-size(7)>> <>
+                   "** (exit) %LoggerHandlerKit.FakeStruct{hello: \"world\"}" <> _
+             } = body
 
-      assert message =~ "**Reason:** `** (stop) %LoggerHandlerKit.FakeStruct{hello: \"world\"}`"
-      assert thread_name =~ "genserver"
+      assert message =~ "GenServer"
+      assert message =~ "terminating"
     end
 
     @tag config: [enable_presence: true]
@@ -597,23 +704,21 @@ defmodule DiscoLog.LoggerHandlerTest do
       assert_receive {^ref1,
                       [
                         {:path_params, [channel_id: "occurrences_channel_id"]},
-                        {:form_multipart, body}
+                        {:form_multipart, [payload_json: body]}
                       ]}
 
       assert %{
-               payload_json: %{
-                 applied_tags: [],
-                 message: %{content: message},
-                 name: thread_name
+               applied_tags: [],
+               message: %{
+                 components: [
+                   %{content: message}
+                 ]
                },
-               context: {%{extra_info_from_genserver: %{message: extra_message}}, _}
-             } = decode_body(body)
+               name:
+                 <<_::binary-size(7)>> <> "** (exit) {:error, nil, %Mint.TransportError{reason …"
+             } = body
 
-      assert message =~ "** (stop) {:error, nil, %Mint.TransportError{reason: :closed}}"
-      assert thread_name =~ "genserver"
-
-      assert extra_message =~
-               "GenServer %{} terminating: ** (stop) {:error, nil, %Mint.TransportError{reason: :closed}}"
+      assert message =~ "GenServer {DiscoLog.Registry, DiscoLog.Presence} terminating"
     end
 
     test "GenServer timeout is reported", %{handler_ref: ref} do
@@ -634,21 +739,63 @@ defmodule DiscoLog.LoggerHandlerTest do
 
       assert_receive [
         {:path_params, [channel_id: "occurrences_channel_id"]},
-        {:form_multipart, body}
+        {:form_multipart, [payload_json: body]}
       ]
 
       assert %{
-               payload_json: %{
-                 applied_tags: [],
-                 message: %{content: message},
-                 name: thread_name
+               applied_tags: [],
+               message: %{
+                 components: [
+                   %{content: message}
+                 ]
                },
-               context: {%{extra_reason: extra_reason}, _}
-             } = decode_body(body)
+               name: <<_::binary-size(7)>> <> "** (exit) exited in …"
+             } = body
 
       assert message =~ "timeout"
-      assert thread_name =~ "genserver_call"
-      assert extra_reason =~ "exited in: GenServer.call("
+    end
+
+    @tag config: [metadata: [:extra]]
+    test "both configured metadata and context attached to the occurrence", %{handler_ref: ref} do
+      pid = self()
+
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
+      end)
+
+      try do
+        {:ok, pid} = LoggerHandlerKit.GenServer.start(nil)
+
+        GenServer.call(
+          pid,
+          {:run,
+           fn ->
+             Logger.metadata(extra: "hello")
+             DiscoLog.Context.set(:foo, "bar")
+             {:stop, :bad_exit, :no_state}
+           end}
+        )
+      catch
+        :exit, {:bad_exit, _} -> :ok
+      end
+
+      LoggerHandlerKit.Assert.assert_logged(ref)
+
+      assert_receive [
+        {:path_params, [channel_id: "occurrences_channel_id"]},
+        {:form_multipart, [payload_json: body]}
+      ]
+
+      assert %{
+               applied_tags: [],
+               message: %{
+                 components: [
+                   _,
+                   %{type: 10, content: "```elixir\n%{extra: \"hello\", foo: \"bar\"}\n```"}
+                 ]
+               }
+             } = body
     end
   end
 
@@ -667,20 +814,6 @@ defmodule DiscoLog.LoggerHandlerTest do
       LoggerHandlerKit.Assert.assert_logged(ref)
 
       assert_receive [{:path_params, [channel_id: "occurrences_channel_id"]} | _]
-    end
-  end
-
-  defp decode_body(body) do
-    Map.new(body, fn
-      {k, {content, file}} -> {k, {maybe_decode(content), file}}
-      {k, v} -> {k, maybe_decode(v)}
-    end)
-  end
-
-  defp maybe_decode(binary) do
-    case Jason.decode(binary, keys: :atoms) do
-      {:ok, decoded} -> decoded
-      {:error, _} -> binary
     end
   end
 end

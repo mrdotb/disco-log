@@ -14,7 +14,7 @@ defmodule DiscoLog.StorageTest do
   end
 
   describe "start_link" do
-    test "loads occurences and tags on startup" do
+    test "loads occurrences and tags on startup" do
       API.Mock
       |> expect(:request, 2, fn
         client, :get, "/guilds/:guild_id/threads/active", opts ->
@@ -39,7 +39,7 @@ defmodule DiscoLog.StorageTest do
 
       _ = :sys.get_status(pid)
 
-      assert [{pid, %{"STUBFINGERPRINT!" => "stub_thread_id"}}] ==
+      assert [{pid, %{"FNGRPT" => "stub_thread_id"}}] ==
                Registry.lookup(__MODULE__.Registry, {Storage, :threads})
 
       assert [
@@ -72,7 +72,7 @@ defmodule DiscoLog.StorageTest do
     end
 
     test "thread id exists" do
-      assert "stub_thread_id" = Storage.get_thread_id(__MODULE__, "STUBFINGERPRINT!")
+      assert "stub_thread_id" = Storage.get_thread_id(__MODULE__, "FNGRPT")
     end
 
     test "nil if missing" do

@@ -3,99 +3,103 @@ defmodule DiscoLog.ErrorTest do
 
   alias DiscoLog.Error
 
-  @relative_file_path Path.relative_to(__ENV__.file, File.cwd!())
+  @repo_url "https://github.com/mrdotb/disco-log/blob"
 
-  describe inspect(&Error.new/4) do
-    test "exceptions" do
-      error = %Error{} = build_error(fn -> raise "This is a test" end)
+  @config %{
+    in_app_modules: [__MODULE__],
+    enable_go_to_repo: true,
+    repo_url: @repo_url,
+    git_sha: "commit_sha",
+    go_to_repo_top_modules: []
+  }
 
-      assert error.kind == to_string(RuntimeError)
-      assert error.reason == "This is a test"
-      assert error.source_line =~ @relative_file_path
-      assert error.source_url =~ @relative_file_path
+  describe "enrich" do
+    test "different exit reasons group together" do
+      fun = fn reason -> exit(reason) end
+      error1 = build_error(fun, "foo")
+      error2 = build_error(fun, "bar")
 
-      assert error.source_function ==
-               "DiscoLog.ErrorTest.-test &DiscoLog.Error.new/4 exceptions/1-fun-0-/0"
-
-      assert error.context == %{}
+      assert error1.fingerprint_basis == error2.fingerprint_basis
+      assert @repo_url <> "/commit_sha/test/disco_log/error_test.exs#L18" = error1.source_url
     end
 
-    test "badarith errors" do
-      string_var = to_string(1)
+    test "different throw values reasons grouped together" do
+      fun = fn value -> throw(value) end
+      error1 = build_error(fun, "foo")
+      error2 = build_error(fun, "bar")
 
-      error =
-        %Error{} =
-        build_error(fn -> 1 + string_var end)
+      assert error1.fingerprint_basis == error2.fingerprint_basis
+      assert @repo_url <> "/commit_sha/test/disco_log/error_test.exs#L27" = error1.source_url
+    end
 
-      assert error.kind == to_string(ArithmeticError)
-      assert error.reason == "bad argument in arithmetic expression"
+    test "same exceptions grouped together" do
+      fun = fn _ -> raise "Hello" end
+      error1 = build_error(fun, nil)
+      error2 = build_error(fun, nil)
 
-      # Elixir 1.17.0 reports this errors differntly than previous versions
-      if Version.compare(System.version(), "1.17.0") == :lt do
-        assert error.source_line =~ @relative_file_path
-      else
-        assert error.source_function == "erlang.+/2"
-        assert error.source_line == "nofile"
+      assert error1.fingerprint_basis == error2.fingerprint_basis
+      assert @repo_url <> "/commit_sha/test/disco_log/error_test.exs#L36" = error1.source_url
+    end
+
+    test "same exception types are grouped" do
+      fun = fn arg -> if(arg == 1, do: raise("A"), else: raise("B")) end
+
+      error1 = build_error(fun, 1)
+      error2 = build_error(fun, 2)
+
+      assert error1.fingerprint_basis == error2.fingerprint_basis
+      assert @repo_url <> "/commit_sha/test/disco_log/error_test.exs#L45" = error1.source_url
+    end
+
+    test "same exceptions but arguments part of stacktrace" do
+      fun = fn nil -> :ok end
+      error1 = build_error(fun, :foo)
+      error2 = build_error(fun, :bar)
+
+      assert error1.fingerprint_basis == error2.fingerprint_basis
+      assert @repo_url <> "/commit_sha/test/disco_log/error_test.exs#L55" = error1.source_url
+    end
+
+    test "same exceptions but different lines" do
+      fun = fn
+        :foo -> raise "Foo"
+        :bar -> raise "Foo"
       end
 
-      assert error.source_url =~ @relative_file_path
+      error1 = build_error(fun, :foo)
+      error2 = build_error(fun, :bar)
+
+      refute error1.fingerprint_basis == error2.fingerprint_basis
+      assert @repo_url <> "/commit_sha/test/disco_log/error_test.exs#L65" = error1.source_url
+      assert @repo_url <> "/commit_sha/test/disco_log/error_test.exs#L66" = error2.source_url
     end
 
-    test "undefined function errors" do
-      # This function does not exist and will raise when called
-      {m, f, a} = {DiscoLog, :invalid_fun, []}
+    test "different exceptions but same app path" do
+      fun = fn
+        1 -> String.trim(nil)
+        2 -> Enum.sum(nil)
+      end
 
-      %Error{} =
-        error =
-        build_error(fn -> apply(m, f, a) end)
+      error1 = build_error(fun, 1)
+      error2 = build_error(fun, 2)
 
-      assert error.kind == to_string(UndefinedFunctionError)
-      assert error.reason =~ "is undefined or private"
-      assert error.source_function == Exception.format_mfa(m, f, Enum.count(a))
-      assert error.source_line == "nofile"
-      assert error.source_url == nil
+      refute error1.fingerprint_basis == error2.fingerprint_basis
+      assert @repo_url <> "/commit_sha/test/disco_log/error_test.exs#L99" = error1.source_url
+      assert @repo_url <> "/commit_sha/test/disco_log/error_test.exs#L99" = error2.source_url
     end
 
-    test "throws" do
-      %Error{} =
-        error =
-        build_error(fn -> throw("This is a test") end)
+    test "no in_app entries" do
+      error = build_error(fn _ -> Enum.sum(nil) end, nil, %{@config | in_app_modules: []})
 
-      assert error.kind == "throw"
-      assert error.reason == "This is a test"
-      assert error.source_line =~ @relative_file_path
-      assert error.source_url =~ @relative_file_path
-    end
-
-    test "exits" do
-      %Error{} =
-        error =
-        build_error(fn -> exit("This is a test") end)
-
-      assert error.kind == "exit"
-      assert error.reason == "This is a test"
-      assert error.source_line =~ @relative_file_path
-      assert error.source_url =~ @relative_file_path
-    end
-
-    test "similar error should have the same fingerprint " do
-      error1 = unique_error()
-      error2 = unique_error()
-
-      assert error1.fingerprint == error2.fingerprint
+      refute error.source_url
     end
   end
 
-  describe inspect(&Error.hash/1) do
-    test "similar error should have different hash" do
-      error1 = unique_error()
-      error2 = unique_error()
-
-      assert Error.hash(error1) != Error.hash(error2)
-    end
-  end
-
-  defp unique_error do
-    build_error(fn -> raise "I am unique" end)
+  defp build_error(fun, arg, config \\ @config) do
+    fun.(arg)
+  catch
+    kind, reason ->
+      Error.new(kind, reason, __STACKTRACE__)
+      |> Error.enrich(config)
   end
 end
