@@ -71,7 +71,9 @@ defmodule DiscoLog.MixProject do
       {:phoenix_live_view, "~> 0.19 or ~> 1.0", only: [:dev]},
       {:plug_cowboy, "~> 2.0", only: :dev},
       {:mox, "~> 1.1", only: :test},
-      {:logger_handler_kit, "~> 0.1", only: :test}
+      {:logger_handler_kit, "~> 0.1", only: :test},
+      {:oban, "~> 2.19", only: [:dev]},
+      {:ecto_sqlite3, "~> 0.19.0", only: [:dev]}
     ]
   end
 

@@ -31,6 +31,23 @@ Application.put_env(:disco_log, DemoWeb.Endpoint,
   ]
 )
 
+# Configures Oban
+Application.put_env(:disco_log, Demo.Repo, database: "dev.db")
+
+defmodule Demo.Repo do
+  use Ecto.Repo,
+    adapter: Ecto.Adapters.SQLite3,
+    otp_app: :disco_log
+end
+
+defmodule Migration0 do
+  use Ecto.Migration
+
+  def change do
+    Oban.Migrations.up()
+  end
+end
+
 defmodule DemoWeb.PageController do
   import Plug.Conn
 
@@ -57,6 +74,11 @@ defmodule DemoWeb.PageController do
     <div><a href="/user_upgrade">Generate a pay plan log</a></div>
     <div><a href="/extra">Generate a log with attachments</a></div>
     <div><a href="/long_extra">Generate a log with long attachment</a></div>
+    
+    <h3>Oban example</h3>
+    <div><a href="/oban/exception">Job failing with exception</a></div>
+    <div><a href="/oban/throw">Job failing with a throw</a></div>
+    <div><a href="/oban/exit">Job failing with exit</a></div>
 
     <h3>Should not generate errors</h3>
     <div><a href="/404">404 Not found</a></div>
@@ -141,6 +163,25 @@ defmodule DemoWeb.LogController do
     conn
     |> redirect(to: "/")
   end
+end
+
+defmodule DemoWeb.ObanController do
+  import Phoenix.Controller
+  use Oban.Worker, max_attempts: 1
+  
+  def init(opts), do: opts
+  
+  def call(conn, type) do
+    new(%{type: type}) |> Oban.insert!()
+    
+    conn
+    |> redirect(to: "/")
+  end
+  
+  @impl Oban.Worker
+  def perform(%Oban.Job{args: %{"type" => "exception"}}), do: raise "FooBar"
+  def perform(%Oban.Job{args: %{"type" => "throw"}}), do: throw("catch!")
+  def perform(%Oban.Job{args: %{"type" => "exit"}}), do: exit("i quit")
 end
 
 defmodule DemoWeb.MountErrorLive do
@@ -247,6 +288,10 @@ defmodule DemoWeb.Router do
     live("/liveview/multi_error/raise", DemoWeb.MultiErrorLive, :raise)
     live("/liveview/multi_error/throw", DemoWeb.MultiErrorLive, :throw)
     live("/liveview/component", DemoWeb.ComponentErrorLive, :update_raise)
+    
+    get("/oban/exception", DemoWeb.ObanController, :exception)
+    get("/oban/throw", DemoWeb.ObanController, :throw)
+    get("/oban/exit", DemoWeb.ObanController, :exit)
   end
 end
 
@@ -282,10 +327,18 @@ Application.put_env(:phoenix, :serve_endpoints, true)
 
 Task.async(fn ->
   children = [
+    Demo.Repo,
     {Phoenix.PubSub, [name: Demo.PubSub, adapter: Phoenix.PubSub.PG2]},
-    DemoWeb.Endpoint
+    DemoWeb.Endpoint,
+    {Oban, repo: Demo.Repo, engine: Oban.Engines.Lite, plugins: [], queues: [default: 10]}
   ]
+  
+  Demo.Repo.__adapter__().storage_down(Demo.Repo.config())
+  Demo.Repo.__adapter__().storage_up(Demo.Repo.config())
 
   {:ok, _} = Supervisor.start_link(children, strategy: :one_for_one)
+  
+  Ecto.Migrator.run(Demo.Repo, [{0, Migration0}], :up, all: true)  
+
   Process.sleep(:infinity)
 end)
