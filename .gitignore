@@ -31,3 +31,6 @@ disco_log-*.tar
 
 # Config
 /config/dev.exs
+
+# Database
+/dev.db*
