@@ -28,10 +28,6 @@ defmodule DiscoLog.Application do
       :logger.add_handler(__MODULE__, LoggerHandler, %{config: config})
     end
 
-    if config.instrument_phoenix do
-      Integrations.Phoenix.attach(config)
-    end
-
     if config.instrument_oban do
       Integrations.Oban.attach(config)
     end

@@ -14,7 +14,6 @@ defmodule DiscoLog.ConfigTest do
     enable: true,
     enable_logger: true,
     instrument_oban: true,
-    instrument_phoenix: true,
     instrument_tesla: true,
     metadata: [:foo],
     excluded_domains: [:cowboy]
