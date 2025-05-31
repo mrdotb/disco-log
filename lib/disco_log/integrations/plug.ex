@@ -76,24 +76,27 @@ defmodule DiscoLog.Integrations.Plug do
 
       def call(conn, opts) do
         unquote(__MODULE__).set_context(conn)
-        super(conn, opts)
-      rescue
-        e in Plug.Conn.WrapperError ->
-          unquote(__MODULE__).report_error(e.conn, e.reason, e.stack, config())
 
-          Conn.WrapperError.reraise(e)
+        case conn do
+          %{adapter: {Plug.Cowboy.Conn, _}} ->
+            try do
+              super(conn, opts)
+            rescue
+              e in Plug.Conn.WrapperError ->
+                unquote(__MODULE__).report_error(e.conn, e.reason, e.stack, config())
 
-        e ->
-          stack = __STACKTRACE__
-          unquote(__MODULE__).report_error(conn, e, stack, config())
+                Conn.WrapperError.reraise(e)
+            catch
+              kind, reason ->
+                stack = __STACKTRACE__
+                unquote(__MODULE__).report_error(conn, {kind, reason}, stack, config())
 
-          :erlang.raise(:error, e, stack)
-      catch
-        kind, reason ->
-          stack = __STACKTRACE__
-          unquote(__MODULE__).report_error(conn, {kind, reason}, stack, config())
+                :erlang.raise(kind, reason, stack)
+            end
 
-          :erlang.raise(kind, reason, stack)
+          _ ->
+            super(conn, opts)
+        end
       end
 
       defp config(), do: DiscoLog.Config.read!()
@@ -102,13 +105,7 @@ defmodule DiscoLog.Integrations.Plug do
 
   @doc false
   def report_error(conn, reason, stack, config) do
-    unless Process.get(:disco_log_router_exception_reported) do
-      try do
-        DiscoLog.report(reason, stack, %{"plug" => build_context(conn)}, config)
-      after
-        Process.put(:disco_log_router_exception_reported, true)
-      end
-    end
+    DiscoLog.report(reason, stack, %{"plug" => build_context(conn)}, config)
   end
 
   @doc false

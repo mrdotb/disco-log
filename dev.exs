@@ -14,6 +14,7 @@ Config.Reader.read!("config/config.exs", env: :dev)
 
 # Configures the endpoint
 Application.put_env(:disco_log, DemoWeb.Endpoint,
+  adapter: Bandit.PhoenixAdapter,
   url: [host: "localhost"],
   secret_key_base: "Hu4qQN3iKzTV4fJxhorPQlA/osH9fAMtbtjVS58PFgfw3ja5Z18Q/WSNR9wP4OfW",
   live_view: [signing_salt: "hMegieSe"],
