@@ -73,7 +73,8 @@ defmodule DiscoLog.MixProject do
       {:mox, "~> 1.1", only: :test},
       {:logger_handler_kit, "~> 0.1", only: :test},
       {:oban, "~> 2.19", only: [:dev]},
-      {:ecto_sqlite3, "~> 0.19.0", only: [:dev]}
+      {:ecto_sqlite3, "~> 0.19.0", only: [:dev]},
+      {:bandit, "~> 1.7", only: [:dev]}
     ]
   end
 
