@@ -31,9 +31,5 @@ defmodule DiscoLog.Application do
     if config.instrument_oban do
       Integrations.Oban.attach(config)
     end
-
-    if config.instrument_tesla do
-      Integrations.Tesla.attach(config)
-    end
   end
 end

@@ -7,7 +7,7 @@ defmodule Mix.Tasks.DiscoLog.Create do
   alias DiscoLog.Config
   alias DiscoLog.Discord.API
 
-  @default_tags Enum.map(~w(plug live_view oban tesla), &%{name: &1})
+  @default_tags Enum.map(~w(plug live_view oban), &%{name: &1})
 
   @impl Mix.Task
   def run(_args) do

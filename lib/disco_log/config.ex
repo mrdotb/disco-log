@@ -60,11 +60,6 @@ defmodule DiscoLog.Config do
       default: true,
       doc: "Automatically instrument Oban?"
     ],
-    instrument_tesla: [
-      type: :boolean,
-      default: true,
-      doc: "Automatically instrument Tesla?"
-    ],
     metadata: [
       type: {:list, :atom},
       default: [],
