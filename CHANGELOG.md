@@ -5,6 +5,23 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v2.0.0-rc.0](https://github.com/mrdotb/disco-log/compare/v1.0.3...v2.0.0-rc.0) (2025-06-13)
+### Breaking Changes:
+
+* Rework core experience
+
+
+
+### Features:
+
+* plug: Make Plug integration only catch errors for Cowboy
+
+* dev: Add Oban to dev demo app
+
+### Bug Fixes:
+
+* missing mint structs when using disco-log without presence
+
 ## [v1.0.3](https://github.com/mrdotb/disco-log/compare/v1.0.2...v1.0.3) (2025-03-20)
 
 
