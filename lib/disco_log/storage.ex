@@ -23,6 +23,8 @@ defmodule DiscoLog.Storage do
   end
 
   @doc "Add a new fingerprint -> thread_id mapping"
+  @spec add_thread_id(DiscoLog.Config.supervisor_name(), fingerprint :: String.t(), String.t()) ::
+          :ok
   def add_thread_id(name, fingerprint, thread_id) do
     GenServer.call(
       DiscoLog.Registry.via(name, __MODULE__),
@@ -31,6 +33,8 @@ defmodule DiscoLog.Storage do
   end
 
   @doc "Retrieve the thread_id for a given fingerprint"
+  @spec get_thread_id(DiscoLog.Config.supervisor_name(), fingerprint :: String.t()) ::
+          String.t() | nil
   def get_thread_id(name, fingerprint) do
     name
     |> DiscoLog.Registry.registry_name()
@@ -42,6 +46,7 @@ defmodule DiscoLog.Storage do
   end
 
   @doc "Retrieve the tag id for a given tag"
+  @spec get_tags(DiscoLog.Config.supervisor_name()) :: String.t() | nil
   def get_tags(name) do
     name
     |> DiscoLog.Registry.registry_name()

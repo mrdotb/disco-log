@@ -118,7 +118,33 @@ defmodule DiscoLog.Config do
   #{NimbleOptions.docs(@compiled_schema)}
   """
 
-  @type t() :: map()
+  @type t() :: %{
+          otp_app: atom(),
+          token: String.t(),
+          guild_id: String.t(),
+          category_id: String.t(),
+          occurrences_channel_id: String.t(),
+          info_channel_id: String.t(),
+          error_channel_id: String.t(),
+          enable: boolean(),
+          enable_logger: boolean(),
+          enable_discord_log: boolean(),
+          enable_presence: boolean(),
+          instrument_oban: boolean(),
+          metadata: [atom()],
+          excluded_domains: [atom()],
+          discord_client_module: module(),
+          supervisor_name: supervisor_name(),
+          presence_status: String.t(),
+          enable_go_to_repo: boolean(),
+          go_to_repo_top_modules: [module()],
+          repo_url: String.t(),
+          git_sha: String.t(),
+          discord_client: DiscoLog.Discord.API.t(),
+          in_app_modules: [module()]
+        }
+
+  @type supervisor_name() :: atom()
 
   @doc """
   Reads and validates config from global application configuration

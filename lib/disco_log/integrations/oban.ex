@@ -28,6 +28,43 @@ defmodule DiscoLog.Integrations.Oban do
   * `job.priority`: the priority of the job.
 
   * `job.attempt`: the number of attempts performed for the job.
+
+  > #### Universal Integration {: .tip}
+  >
+  > This integration will report errors directly to Discord, without logging it
+  to other sources to avoid duplication. If you want to still log errors
+  normally or if you use other error reporting libraries, you might want to
+  roll out your own Oban instrumentation module that would work for all loggers. Here's an example:
+  >
+  > ```elixir
+  > defmodule MyApp.ObanReporter do
+  >   require Logger
+  > 
+  >   def attach do
+  >     :telemetry.attach(:oban_errors, [:oban, :job, :exception], &__MODULE__.handle_event/4, [])
+  >   end
+  >   
+  >   def handle_event([:oban, :job, :exception], _measure, meta, _) do
+  >     job_meta = [
+  >       attempt: meta.job.attempt,
+  >       args: meta.job.args,
+  >       id: meta.job.id,
+  >       priority: meta.job.priority,
+  >       queue: meta.job.queue,
+  >       worker: meta.job.worker,
+  >       state: meta.state,
+  >       result: meta.result
+  >     ]
+  >       
+  >     normalized = Exception.normalize(meta.kind, meta.reason, meta.stacktrace)
+  >     reason = if kind == :throw, do: {:nocatch, reason}, else: normalized
+  >       
+  >     meta.kind
+  >     |> Exception.format(meta.reason, meta.stacktrace)
+  >     |> Logger.error(job_meta ++ [crash_reason: {normalized, meta.stacktrace})
+  >   end
+  > end
+  > ```
   """
 
   # https://hexdocs.pm/oban/Oban.Telemetry.html

@@ -1,7 +1,7 @@
 # Change Log
 
 All notable changes to this project will be documented in this file.
-See [Conventional Commits](Https://conventionalcommits.org) for commit guidelines.
+See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
 <!-- changelog -->
 
@@ -10,6 +10,14 @@ See [Conventional Commits](Https://conventionalcommits.org) for commit guideline
 
 * Rework core experience
 
+### Migration Guide
+
+* Remove `instrument_phoenix` from your configuration
+* Remove `instrument_tesla` from your configuration
+* Migrate any usages of `DiscoLog.report/4` to `DiscoLog.report/5`, e.g. `DiscoLog.report(error, stacktrace)` -> `DiscoLog.report(:error, error, stacktrace)`
+* [optional] Clean up existing occurrences with `mix disco_log.cleanup` or
+manually. The DiscoLog fingerprinting format has changed and it won't be able to
+pick up old occurrences.
 
 
 ### Features:

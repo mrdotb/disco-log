@@ -1,6 +1,12 @@
 defmodule DiscoLog do
   @moduledoc """
-  Elixir-based built-in error tracking solution.
+  Send messages to Discord
+
+  All functions in this module accept optional `context` and `config` parameters.
+  * `context` is the last opportunity to assign some metadata that will be
+  attached to the message or occurrence. Occurrences will additionally be tagged
+  if context key names match existing channel tags.
+  * `config` is important if you're running [advanced configuration](advanced-configuration.md)
   """
   alias DiscoLog.Error
   alias DiscoLog.Config
@@ -9,6 +15,19 @@ defmodule DiscoLog do
   alias DiscoLog.Discord.API
   alias DiscoLog.Discord.Prepare
 
+  @doc """
+  Report catched error to occurrences channel
+
+  This function reports an error directly to the occurrences channel, bypassing logging. 
+
+  Example:
+
+      try do
+        raise "Unexpected!"
+      catch 
+        kind, reason -> DiscoLog.report(kind, reason, __STACKTRACE__)
+      end
+  """
   @spec report(Exception.kind(), any(), Exception.stacktrace(), Context.t(), Config.t() | nil) ::
           API.response()
   def report(kind, reason, stacktrace, context \\ %{}, config \\ nil) do
@@ -30,6 +49,7 @@ defmodule DiscoLog do
         applied_tags =
           context
           |> Map.keys()
+          |> Enum.map(&to_string/1)
           |> Enum.filter(&(&1 in Map.keys(available_tags)))
           |> Enum.map(&Map.fetch!(available_tags, &1))
 
@@ -49,6 +69,9 @@ defmodule DiscoLog do
     end
   end
 
+  @doc """
+  Sends text message to the channel configured as `info_channel_id`
+  """
   @spec log_info(String.t(), Context.t(), Config.t() | nil) :: API.response()
   def log_info(message, context \\ %{}, config \\ nil) do
     config = maybe_read_config(config)
@@ -57,6 +80,9 @@ defmodule DiscoLog do
     API.post_message(config.discord_client, config.info_channel_id, message)
   end
 
+  @doc """
+  Sends text message to the channel configures as `error_channel_id`
+  """
   @spec log_error(String.t(), Context.t(), Config.t() | nil) :: API.response()
   def log_error(message, context \\ %{}, config \\ nil) do
     config = maybe_read_config(config)
