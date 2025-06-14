@@ -80,6 +80,7 @@ defmodule DemoWeb.PageController do
     <div><a href="/oban/exception">Job failing with exception</a></div>
     <div><a href="/oban/throw">Job failing with a throw</a></div>
     <div><a href="/oban/exit">Job failing with exit</a></div>
+    <div><a href="/oban/error">Job failing with error tuple</a></div>
 
     <h3>Should not generate errors</h3>
     <div><a href="/404">404 Not found</a></div>
@@ -183,6 +184,7 @@ defmodule DemoWeb.ObanController do
   def perform(%Oban.Job{args: %{"type" => "exception"}}), do: raise "FooBar"
   def perform(%Oban.Job{args: %{"type" => "throw"}}), do: throw("catch!")
   def perform(%Oban.Job{args: %{"type" => "exit"}}), do: exit("i quit")
+  def perform(%Oban.Job{args: %{"type" => "error"}}), do: {:error, "foo"}
 end
 
 defmodule DemoWeb.MountErrorLive do
@@ -293,6 +295,7 @@ defmodule DemoWeb.Router do
     get("/oban/exception", DemoWeb.ObanController, :exception)
     get("/oban/throw", DemoWeb.ObanController, :throw)
     get("/oban/exit", DemoWeb.ObanController, :exit)
+    get("/oban/error", DemoWeb.ObanController, :error)
   end
 end
 
