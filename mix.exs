@@ -21,9 +21,25 @@ defmodule DiscoLog.MixProject do
         formatters: ["html"],
         extra_section: "GUIDES",
         extras: [
+          "CHANGELOG.md",
           "guides/getting-started.md",
           "guides/advanced-configuration.md",
           "guides/standalone-presence.md"
+        ],
+        groups_for_modules: [
+          Integrations: [
+            DiscoLog.Integrations.Oban,
+            DiscoLog.Integrations.Plug
+          ],
+          "Discord Interface": [
+            DiscoLog.Discord.API,
+            DiscoLog.Discord.API.Client
+          ],
+          "Supervision Tree": [
+            DiscoLog.Supervisor,
+            DiscoLog.Storage,
+            DiscoLog.Presence
+          ]
         ],
         api_reference: false,
         main: "getting-started"

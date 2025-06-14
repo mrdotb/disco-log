@@ -1,7 +1,7 @@
 defmodule DiscoLog.Context do
   @moduledoc """
   Context is a map of any terms that DiscoLog attaches to reported occurrences.
-  The context is stored in `Logger` module metadata.
+  The context is stored in [logger metadata](`m:Logger#module-metadata`).
 
   > #### Using context {: .tip}
   >

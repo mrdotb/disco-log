@@ -28,7 +28,7 @@ config :my_app, DiscoLog,
   ],
   server_a: [
     guild_id: "1234567891011121314",
-    token: "server_A_secret_token"
+    token: "server_A_secret_token",
     category_id: "1234567891011121314",
     occurrences_channel_id: "1234567891011121314",
     info_channel_id: "1234567891011121314",
@@ -37,7 +37,7 @@ config :my_app, DiscoLog,
   ],
   server_b: [
     guild_id: "9876543210123456789",
-    token: "server_B_secret_token"
+    token: "server_B_secret_token",
     category_id: "9876543210123456789",
     occurrences_channel_id: "9876543210123456789",
     info_channel_id: "9876543210123456789",

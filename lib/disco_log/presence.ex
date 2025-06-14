@@ -1,6 +1,12 @@
 defmodule DiscoLog.Presence do
   @moduledoc """
   A GenServer responsible for keeping the bot Online
+
+  The presence server is started automatically as long as the `enable_presence`
+  configuration flag is set.
+
+  See the [standalone presence guide](standalone-presence.md) to learn how to
+  use presence without the rest of DiscoLog
   """
   use GenServer
 

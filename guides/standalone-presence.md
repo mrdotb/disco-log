@@ -28,12 +28,12 @@ defmodule MyApp.Application do
       MyAppWeb.Endpoint
     ]
 
-    opts = [strategy: :one_for_one, name: MyAPp.Supervisor]
+    opts = [strategy: :one_for_one, name: MyApp.Supervisor]
     Supervisor.start_link(children, opts)
   end
 
   if Mix.env() in [:prod] do
-    defp presence() do 
+    defp presence() do
       token = Application.fetch_env!(:disco_log, :token)
       client = DiscoLog.Discord.API.Client.client(token)
 
