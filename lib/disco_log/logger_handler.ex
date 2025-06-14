@@ -1,5 +1,12 @@
 defmodule DiscoLog.LoggerHandler do
-  @moduledoc false
+  @moduledoc """
+  The heart of DiscoLog.
+
+  Logger Handler expects `t:DiscoLog.Config.t/0` as its configuration.
+
+  See [advanced configuration guide](advanced-configuration.md) to learn how to
+  start logger handler directly.
+  """
   @behaviour :logger_handler
 
   alias DiscoLog.Error

@@ -94,7 +94,8 @@ defmodule DiscoLog.Error do
   defp compose_source_url(_, _), do: nil
 
   defp in_app_module?(module, config) do
-    with false <- module in config.in_app_modules do
+    with false <- module in config.in_app_modules,
+         true <- function_exported?(module, :__info__, 2) do
       [top_level | _] = Module.split(module)
       top_level in config.go_to_repo_top_modules
     end

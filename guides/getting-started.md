@@ -4,7 +4,7 @@ This guide is an introduction to DiscoLog. It will guide you through the setup o
 
 ## Install DiscoLog
 
-The first step is to add DiscoLog to your applicaiton is to declare the package as a dependency in your `mix.exs` file.
+The first step to add DiscoLog to your application is to declare the package as a dependency in your `mix.exs` file.
 
 ```elixir
 defp deps do
@@ -62,11 +62,11 @@ Go to the [developers portal](https://discord.com/developers/applications)
 ## Add Bot to your Server
 
 *Go to the installation menu and open the installation link*
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/14-install-bot.png" alt="Instal Bot on your server step 1" />
+<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/14-install-bot.png" alt="Install Bot on your server step 1" />
 *Follow the steps*
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/15-install-bot.png" alt="Instal Bot on your server step 2" />
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/16-install-bot.png" alt="Instal Bot on your server step 3" />
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/17-install-bot.png" alt="Instal Bot on your server step 4" />
+<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/15-install-bot.png" alt="Install Bot on your server step 2" />
+<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/16-install-bot.png" alt="Install Bot on your server step 3" />
+<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/17-install-bot.png" alt="Install Bot on your server step 4" />
 
 
 ## Create DiscoLog channels

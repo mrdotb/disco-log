@@ -18,8 +18,9 @@ defmodule DiscoLog.Discord.API do
   """
   @type client() :: any()
   @type response() :: {:ok, %{status: non_neg_integer(), body: any()}} | {:error, Exception.t()}
+  @type t() :: %__MODULE__{client: client(), module: atom()}
 
-  @callback client(token :: String.t()) :: %__MODULE__{client: client(), module: atom()}
+  @callback client(token :: String.t()) :: t()
   @callback request(client :: client(), method :: atom(), url :: String.t(), opts :: keyword()) ::
               response()
 

@@ -42,7 +42,7 @@ defmodule DiscoLog.Supervisor do
     Supervisor.init(children, strategy: :one_for_one)
   end
 
-  def maybe_presence(config) do
+  defp maybe_presence(config) do
     if config[:enable_presence] do
       [
         {Presence,
