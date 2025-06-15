@@ -27,46 +27,49 @@ You need to register a [Discord Account](https://discord.com/)
 ### Create a community Discord Server
 *A Discord community server needs to have a forum-type channel, which we use for error tracking.*
 
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/1-create-server.png" alt="Create Server step 1" />
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/2-create-server.png" alt="Create Server step 2" />
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/3-create-server.png" alt="Create Server step 3" />
+![Create Server step 1](assets/001.png)
+![Create Server step 2](assets/002.png)
+![Create Server step 3](assets/003.png)
 
 ### Edit the Discord Server settings
 
 *Right-click on the server and select `Server Settings` > `Community Settings`*
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/4-edit-server.png" alt="Edit Server step 4" />
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/5-edit-server.png" alt="Edit Server step 5" />
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/6-edit-server.png" alt="Edit Server step 6" />
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/7-edit-server.png" alt="Edit Server step 7" />
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/8-edit-server.png" alt="Edit Server step 8" />
+![Edit Server step 4](assets/004.png)
+![Edit Server step 5](assets/005.png)
+![Edit Server step 6](assets/006.png)
+![Edit Server step 7](assets/007.png)
+![Edit Server step 8](assets/008.png)
 
 *Copy the server ID, it will be needed later*
 
 +*If you don't see `Copy Server ID` in the UI, enable developer mode in Settings -> Advanced -> Developer Mode.*
 
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/9-copy-server-id.png" alt="Edit Server step 9" />
+![Edit Server step 9](assets/009.png)
 
 ## Create a Discord Bot
 
 Go to the [developers portal](https://discord.com/developers/applications)
 
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/10-create-bot.png" alt="Create bot 1" />
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/11-create-bot.png" alt="Create bot 2" />
+![Create bot 1](assets/010.png)
+![Create bot 2](assets/011.png)
 
 *Disable User Install and add the scope `bot` and the permissions `Attach Files`, `Manage Channels`, `Manage Threads`, `Send Messages`, `Send Messages in Threads`*
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/12-bot-settings.png" alt="Bot settings" />
+![Bot settings](assets/012.png)
 
 *Generate and copy the bot token, it will be needed later*
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/13-bot-token.png" alt="Bot token" />
+![Bot token](assets/013.png)
 
 ## Add Bot to your Server
 
 *Go to the installation menu and open the installation link*
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/14-install-bot.png" alt="Install Bot on your server step 1" />
+
+![Install Bot on your server step 1](assets/014.png)
+
 *Follow the steps*
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/15-install-bot.png" alt="Install Bot on your server step 2" />
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/16-install-bot.png" alt="Install Bot on your server step 3" />
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/17-install-bot.png" alt="Install Bot on your server step 4" />
+
+![Install Bot on your server step 2](assets/015.png)
+![Install Bot on your server step 3](assets/016.png)
+![Install Bot on your server step 4](assets/017.png)
 
 
 ## Create DiscoLog channels
@@ -98,9 +101,9 @@ mix disco_log.sample
 ```
 
 *How it should look like*
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/18-sample-log.png" alt="Sample log 1" />
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/19-sample-log.png" alt="Sample log 2" />
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/20-sample-log.png" alt="Sample log 3" />
+
+![Sample log 1](assets/018.png)
+![Sample log 2](assets/019.png)
 
 
 ## After setup
@@ -140,7 +143,8 @@ DiscoLog can optionally set your bot's status to **Online**, allowing you to dis
    ```
 
 *Bot with Presence*
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/21-presence.png" alt="Presence status" />
+
+![Presence status](assets/presence.png)
 
 ## Go to Repo Feature
 
@@ -148,7 +152,7 @@ The **Go to Repo** feature allows DiscoLog to link directly to your code reposit
 
 ### Example Interface
 *Link to GitHub code*
-<img src="https://raw.githubusercontent.com/mrdotb/i/master/disco-log/22-go-to-code.png" alt="Go to code" />
+![Go to code](assets/go-to-code.png)
 
 ### Configuration Instructions
 
