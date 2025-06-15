@@ -41,6 +41,9 @@ defmodule DiscoLog.MixProject do
             DiscoLog.Presence
           ]
         ],
+        assets: %{
+          "assets" => "assets"
+        },
         api_reference: false,
         main: "getting-started"
       ]
