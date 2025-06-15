@@ -19,7 +19,8 @@ defmodule Mix.Tasks.DiscoLog.Sample do
       raise "🚨 DiscoLog is raising an error !"
     rescue
       exception ->
-        Logger.error(reason: {exception, __STACKTRACE__})
+        Exception.format(:error, exception, __STACKTRACE__)
+        |> Logger.error(crash_reason: {exception, __STACKTRACE__})
     end
   end
 end
