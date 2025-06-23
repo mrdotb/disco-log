@@ -301,7 +301,6 @@ end
 
 defmodule DemoWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :disco_log
-  use DiscoLog.Integrations.Plug
 
   @session_options [
     store: :cookie,
@@ -320,6 +319,7 @@ defmodule DemoWeb.Endpoint do
 
   plug(Plug.RequestId)
   plug(Plug.Telemetry, event_prefix: [:phoenix, :endpoint])
+  plug(DiscoLog.Integrations.Plug)
   plug(:maybe_exception)
   plug(DemoWeb.Router)
 

@@ -40,7 +40,10 @@ defmodule DiscoLog.LoggerHandler do
               |> Error.enrich(config)
               |> Map.put(:display_full_error, message)
 
-            context = Map.merge(Context.get(), metadata)
+            context =
+              Context.get()
+              |> enrich_context(log_event)
+              |> Map.merge(metadata)
 
             DiscoLog.log_occurrence(
               error,
@@ -74,4 +77,10 @@ defmodule DiscoLog.LoggerHandler do
 
   defp message(%{msg: {io_format, data}}),
     do: io_format |> :io_lib.format(data) |> IO.iodata_to_binary()
+
+  defp enrich_context(context, %{meta: %{conn: conn}}) when is_struct(conn, Plug.Conn) do
+    Map.put_new(context, "plug", DiscoLog.Integrations.Plug.conn_context(conn))
+  end
+
+  defp enrich_context(context, _log_event), do: context
 end

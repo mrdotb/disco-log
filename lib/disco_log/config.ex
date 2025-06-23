@@ -67,7 +67,7 @@ defmodule DiscoLog.Config do
     ],
     excluded_domains: [
       type: {:list, :atom},
-      default: [:cowboy],
+      default: [],
       doc: "Logs with domains from this list will be ignored"
     ],
     discord_client_module: [
