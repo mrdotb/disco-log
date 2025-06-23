@@ -12,26 +12,25 @@ defmodule DiscoLog.Integrations.Plug do
   ```elixir
   defmodule MyApp.Router do
     use Plug.Router
-    use DiscoLog.Integrations.Plug
-
+    
+    plug DiscoLog.Integrations.Plug
+    plug :match
+    plug :dispatch
+    
     ...
   end
   ```
 
   ### Phoenix applications
 
-  There is a particular use case which can be useful when running a Phoenix
-  web application.
-
-  If you want to record exceptions that may occur in your application's endpoint
-  before reaching your router (for example, in any plug like the ones decoding
-  cookies of body contents) you may want to add this integration too:
+  Drop this plug somewhere in your `endpoint.ex`:
 
   ```elixir
   defmodule MyApp.Endpoint do
-    use Phoenix.Endpoint
-    use DiscoLog.Integrations.Plug
-
+    ...
+    
+    plug DiscoLog.Integrations.Plug
+    
     ...
   end
   ```
@@ -60,61 +59,27 @@ defmodule DiscoLog.Integrations.Plug do
   sensitive content like sessions.
 
   """
-
   alias DiscoLog.Context
-  alias Plug.Conn
 
-  defmacro __using__(_opts) do
-    quote do
-      @before_compile unquote(__MODULE__)
-    end
-  end
+  def init(opts), do: opts
 
-  defmacro __before_compile__(_) do
-    quote do
-      defoverridable call: 2
-
-      def call(conn, opts) do
-        unquote(__MODULE__).set_context(conn)
-
-        case conn do
-          %{adapter: {Plug.Cowboy.Conn, _}} ->
-            try do
-              super(conn, opts)
-            rescue
-              e in Plug.Conn.WrapperError ->
-                unquote(__MODULE__).report_error(e.conn, e.reason, e.stack, config())
-
-                Conn.WrapperError.reraise(e)
-            catch
-              kind, reason ->
-                stack = __STACKTRACE__
-                unquote(__MODULE__).report_error(conn, {kind, reason}, stack, config())
-
-                :erlang.raise(kind, reason, stack)
-            end
-
-          _ ->
-            super(conn, opts)
-        end
-      end
-
-      defp config(), do: DiscoLog.Config.read!()
-    end
+  def call(conn, _opts) do
+    set_context(conn)
+    conn
   end
 
   @doc false
   def report_error(conn, reason, stack, config) do
-    DiscoLog.report(reason, stack, %{"plug" => build_context(conn)}, config)
+    DiscoLog.report(reason, stack, %{"plug" => conn_context(conn)}, config)
   end
 
   @doc false
   def set_context(%Plug.Conn{} = conn) do
-    context = build_context(conn)
+    context = conn_context(conn)
     Context.set("plug", context)
   end
 
-  defp build_context(%Plug.Conn{} = conn) do
+  def conn_context(%Plug.Conn{} = conn) do
     %{
       "request.host" => conn.host,
       "request.path" => conn.request_path,
