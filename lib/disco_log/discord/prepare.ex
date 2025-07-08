@@ -7,6 +7,7 @@ defmodule DiscoLog.Discord.Prepare do
   @displayed_message_limit 4000
   @context_overhead String.length("```elixir\n\n```")
   @file_attachment_limit 8_000_000
+  @full_error_overhead String.length("```\n\n```")
 
   def prepare_message(message, context) do
     context_budget = context_budget(message)
@@ -21,13 +22,10 @@ defmodule DiscoLog.Discord.Prepare do
       ]
     }
 
-    append_context(base_message, prepare_context(context, context_budget))
+    append_component(base_message, prepare_context(context, context_budget))
   end
 
   def prepare_occurrence(error, context, applied_tags) do
-    content_component = prepare_main_content(error)
-    context_budget = context_budget(content_component.content)
-
     %{
       name: String.slice(error.fingerprint <> " " <> error.display_title, 0, @max_title_length),
       applied_tags: applied_tags,
@@ -36,20 +34,31 @@ defmodule DiscoLog.Discord.Prepare do
         components: []
       }
     }
-    |> append_component(content_component)
-    |> append_context(prepare_context(context, context_budget))
+    |> append_component(prepare_main_content(error))
+    |> then(fn payload ->
+      budget = full_error_budget(payload)
+      append_component(payload, prepare_full_error_content(error, budget))
+    end)
+    |> then(fn payload ->
+      budget = context_budget(payload)
+      append_component(payload, prepare_context(context, budget))
+    end)
   end
 
   def prepare_occurrence_message(error, context) do
-    content_component = prepare_main_content(error)
-    context_budget = context_budget(content_component.content)
-
     %{
       flags: @components_flag,
       components: []
     }
-    |> append_component(content_component)
-    |> append_context(prepare_context(context, context_budget))
+    |> append_component(prepare_main_content(error))
+    |> then(fn payload ->
+      budget = full_error_budget(payload)
+      append_component(payload, prepare_full_error_content(error, budget))
+    end)
+    |> then(fn payload ->
+      budget = context_budget(payload)
+      append_component(payload, prepare_context(context, budget))
+    end)
   end
 
   def fingerprint_from_thread_name(<<fingerprint::binary-size(6)>> <> " " <> _rest),
@@ -72,8 +81,7 @@ defmodule DiscoLog.Discord.Prepare do
       [
         kind_line,
         "**Reason:** `#{error.display_short_error}`",
-        source_line,
-        "```\n#{error.display_full_error}\n```"
+        source_line
       ]
       |> Enum.reject(&is_nil/1)
       |> Enum.join("\n")
@@ -82,6 +90,22 @@ defmodule DiscoLog.Discord.Prepare do
       type: @text_display_type,
       content: content
     }
+  end
+
+  defp prepare_full_error_content(%{display_full_error: nil}, _full_error_budget), do: nil
+
+  defp prepare_full_error_content(error, full_error_budget) when full_error_budget <= 0 do
+    {:error,
+     {String.byte_slice(error.display_full_error, 0, @file_attachment_limit),
+      [filename: "error.txt"]}}
+  end
+
+  defp prepare_full_error_content(error, full_error_budget) do
+    if String.length(error.display_full_error) <= full_error_budget do
+      %{type: @text_display_type, content: "```\n#{error.display_full_error}\n```"}
+    else
+      prepare_full_error_content(error, 0)
+    end
   end
 
   defp prepare_context(_, context_budget) when context_budget <= 0, do: nil
@@ -102,32 +126,60 @@ defmodule DiscoLog.Discord.Prepare do
         }
 
       {left, right} ->
-        {String.byte_slice(left <> right, 0, @file_attachment_limit), [filename: "context.txt"]}
+        {:context,
+         {String.byte_slice(left <> right, 0, @file_attachment_limit), [filename: "context.txt"]}}
     end
   end
 
-  defp append_component(%{components: components} = message, %{} = component) do
-    put_in(message, [:components], components ++ [component])
+  defp append_component(%{} = message, component) do
+    append_component([payload_json: message], component)
   end
 
-  defp append_component(%{message: %{components: components}} = message, %{} = component) do
-    put_in(message, [:message, :components], components ++ [component])
+  defp append_component(
+         [{:payload_json, %{message: %{components: components}}} | _] = payload,
+         %{} = component
+       ) do
+    put_in(payload, [:payload_json, :message, :components], components ++ [component])
+  end
+
+  defp append_component(
+         [{:payload_json, %{components: components}} | _] = payload,
+         %{} = component
+       ) do
+    put_in(payload, [:payload_json, :components], components ++ [component])
+  end
+
+  defp append_component(
+         [_ | _] = payload,
+         {_filename, {_, [filename: full_filename]}} = attachment
+       ) do
+    append_component(payload ++ [attachment], %{
+      type: 13,
+      file: %{url: "attachment://#{full_filename}"}
+    })
   end
 
   defp append_component(message, _), do: message
 
-  defp append_context(message, {_, _} = context_attachment) do
-    [
-      payload_json:
-        append_component(message, %{type: 13, file: %{url: "attachment://context.txt"}}),
-      context: context_attachment
-    ]
-  end
-
-  defp append_context(message, context_component) do
-    [payload_json: append_component(message, context_component)]
-  end
-
   defp context_budget(main_content),
-    do: @displayed_message_limit - String.length(main_content) - @context_overhead
+    do: @displayed_message_limit - content_length(main_content) - @context_overhead
+
+  defp full_error_budget(main_content),
+    do: @displayed_message_limit - content_length(main_content) - @full_error_overhead
+
+  defp content_length([{:payload_json, %{message: %{components: components}}} | _]) do
+    Enum.sum_by(components, fn
+      %{content: content} -> String.length(content)
+      _ -> 0
+    end)
+  end
+
+  defp content_length([{:payload_json, %{components: components}} | _]) do
+    Enum.sum_by(components, fn
+      %{content: content} -> String.length(content)
+      _ -> 0
+    end)
+  end
+
+  defp content_length(string), do: String.length(string)
 end

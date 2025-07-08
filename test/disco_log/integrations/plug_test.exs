@@ -58,6 +58,7 @@ defmodule DiscoLog.PlugTest do
                        **Source:** \
                        """ <> _
                    },
+                   %{},
                    %{}
                  ]
                }
@@ -97,6 +98,7 @@ defmodule DiscoLog.PlugTest do
                        **Source:** \
                        """ <> _
                    },
+                   %{},
                    %{}
                  ]
                }
@@ -136,6 +138,7 @@ defmodule DiscoLog.PlugTest do
                        **Source:** \
                        """ <> _
                    },
+                   %{},
                    %{}
                  ]
                }
@@ -174,6 +177,7 @@ defmodule DiscoLog.PlugTest do
                        **Source:** \
                        """ <> _
                    },
+                   %{},
                    %{}
                  ]
                }
@@ -209,6 +213,7 @@ defmodule DiscoLog.PlugTest do
                        **Source:** \
                        """ <> _
                    },
+                   %{},
                    %{}
                  ]
                }
@@ -243,6 +248,7 @@ defmodule DiscoLog.PlugTest do
                        **Reason:** `** (exit) \"i quit\"`\
                        """ <> _
                    },
+                   %{},
                    %{}
                  ]
                }

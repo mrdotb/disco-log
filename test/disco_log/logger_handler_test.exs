@@ -363,6 +363,7 @@ defmodule DiscoLog.LoggerHandlerTest do
                applied_tags: [],
                message: %{
                  components: [
+                   %{content: _message},
                    %{content: message}
                  ]
                },
@@ -392,6 +393,7 @@ defmodule DiscoLog.LoggerHandlerTest do
                applied_tags: [],
                message: %{
                  components: [
+                   %{content: _message},
                    %{content: message}
                  ]
                },
@@ -423,6 +425,7 @@ defmodule DiscoLog.LoggerHandlerTest do
                applied_tags: [],
                message: %{
                  components: [
+                   %{content: _message},
                    %{content: message}
                  ]
                },
@@ -452,6 +455,7 @@ defmodule DiscoLog.LoggerHandlerTest do
                applied_tags: [],
                message: %{
                  components: [
+                   %{content: _message},
                    %{content: message}
                  ]
                },
@@ -481,6 +485,7 @@ defmodule DiscoLog.LoggerHandlerTest do
                applied_tags: [],
                message: %{
                  components: [
+                   %{content: _message},
                    %{content: message}
                  ]
                },
@@ -510,6 +515,7 @@ defmodule DiscoLog.LoggerHandlerTest do
                applied_tags: [],
                message: %{
                  components: [
+                   %{content: _message},
                    %{content: message}
                  ]
                },
@@ -546,6 +552,7 @@ defmodule DiscoLog.LoggerHandlerTest do
                applied_tags: [],
                message: %{
                  components: [
+                   %{content: _message},
                    %{content: message}
                  ]
                },
@@ -586,6 +593,7 @@ defmodule DiscoLog.LoggerHandlerTest do
                applied_tags: [],
                message: %{
                  components: [
+                   %{content: _message},
                    %{content: message}
                  ]
                },
@@ -624,6 +632,7 @@ defmodule DiscoLog.LoggerHandlerTest do
                applied_tags: [],
                message: %{
                  components: [
+                   %{content: _message},
                    %{content: message}
                  ]
                },
@@ -654,6 +663,7 @@ defmodule DiscoLog.LoggerHandlerTest do
                applied_tags: [],
                message: %{
                  components: [
+                   %{content: _},
                    %{content: message}
                  ]
                },
@@ -711,6 +721,7 @@ defmodule DiscoLog.LoggerHandlerTest do
                applied_tags: [],
                message: %{
                  components: [
+                   %{content: _message},
                    %{content: message}
                  ]
                },
@@ -746,6 +757,7 @@ defmodule DiscoLog.LoggerHandlerTest do
                applied_tags: [],
                message: %{
                  components: [
+                   %{content: _message},
                    %{content: message}
                  ]
                },
@@ -791,6 +803,7 @@ defmodule DiscoLog.LoggerHandlerTest do
                applied_tags: [],
                message: %{
                  components: [
+                   _,
                    _,
                    %{type: 10, content: "```elixir\n%{extra: \"hello\", foo: \"bar\"}\n```"}
                  ]

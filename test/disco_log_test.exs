@@ -58,6 +58,7 @@ defmodule DiscoLogTest do
                          message: %{
                            components: [
                              _,
+                             _,
                              %{content: "```elixir\n%{hello: \"world\", live_view: \"foo\"}\n```"}
                            ]
                          }
