@@ -99,9 +99,12 @@ defmodule DiscoLog.Discord.PrepareTest do
                        content: """
                        **Kind:** `KIND`
                        **Reason:** `SHORT`
-                       **Source:** [SOURCE](http://example.com)
-                       ```\nFULL\n```\
+                       **Source:** [SOURCE](http://example.com)\
                        """
+                     },
+                     %{
+                       type: 10,
+                       content: "```\nFULL\n```"
                      }
                    ]
                  }
@@ -128,10 +131,10 @@ defmodule DiscoLog.Discord.PrepareTest do
                      %{
                        type: 10,
                        content: """
-                       **Reason:** `SHORT`
-                       ```\nFULL\n```\
+                       **Reason:** `SHORT`\
                        """
-                     }
+                     },
+                     %{type: 10, content: "```\nFULL\n```"}
                    ]
                  }
                }
@@ -146,6 +149,7 @@ defmodule DiscoLog.Discord.PrepareTest do
                    flags: 32_768,
                    components: [
                      _,
+                     _,
                      %{type: 10, content: "```elixir\n%{foo: \"bar\"}\n```"}
                    ]
                  }
@@ -158,11 +162,28 @@ defmodule DiscoLog.Discord.PrepareTest do
                payload_json: %{
                  message: %{
                    flags: 32_768,
-                   components: [_, %{type: 13, file: %{url: "attachment://context.txt"}}]
+                   components: [_, _, %{type: 13, file: %{url: "attachment://context.txt"}}]
                  }
                },
                context: {"%{\n  foo: " <> _, [filename: "context.txt"]}
              ] = Prepare.prepare_occurrence(@error, %{foo: String.duplicate("a", 4000)}, [])
+    end
+
+    test "full message is attached as file if it exceeds limit" do
+      assert [
+               payload_json: %{
+                 message: %{
+                   flags: 32_768,
+                   components: [_, %{type: 13, file: %{url: "attachment://error.txt"}}, _]
+                 }
+               },
+               error: {"aaaaaa" <> _, [filename: "error.txt"]}
+             ] =
+               Prepare.prepare_occurrence(
+                 %{@error | display_full_error: String.duplicate("a", 4000)},
+                 %{foo: "bar"},
+                 []
+               )
     end
   end
 
@@ -185,9 +206,12 @@ defmodule DiscoLog.Discord.PrepareTest do
                      content: """
                      **Kind:** `KIND`
                      **Reason:** `SHORT`
-                     **Source:** [SOURCE](http://example.com)
-                     ```\nFULL\n```\
+                     **Source:** [SOURCE](http://example.com)\
                      """
+                   },
+                   %{
+                     type: 10,
+                     content: "```\nFULL\n```"
                    }
                  ],
                  flags: 32_768
@@ -212,9 +236,12 @@ defmodule DiscoLog.Discord.PrepareTest do
                    %{
                      type: 10,
                      content: """
-                     **Reason:** `SHORT`
-                     ```\nFULL\n```\
+                     **Reason:** `SHORT`\
                      """
+                   },
+                   %{
+                     type: 10,
+                     content: "```\nFULL\n```"
                    }
                  ],
                  flags: 32_768
@@ -226,7 +253,7 @@ defmodule DiscoLog.Discord.PrepareTest do
     test "context is attached as code block" do
       assert [
                payload_json: %{
-                 components: [_, %{type: 10, content: "```elixir\n%{foo: \"bar\"}\n```"}],
+                 components: [_, _, %{type: 10, content: "```elixir\n%{foo: \"bar\"}\n```"}],
                  flags: 32_768
                }
              ] =
@@ -236,7 +263,7 @@ defmodule DiscoLog.Discord.PrepareTest do
     test "context is attached as file if it exceeds limit" do
       assert [
                payload_json: %{
-                 components: [_, %{type: 13, file: %{url: "attachment://context.txt"}}],
+                 components: [_, _, %{type: 13, file: %{url: "attachment://context.txt"}}],
                  flags: 32_768
                },
                context: {"%{\n  foo: " <> _, [filename: "context.txt"]}
@@ -244,6 +271,20 @@ defmodule DiscoLog.Discord.PrepareTest do
                Prepare.prepare_occurrence_message(@error, %{
                  foo: String.duplicate("a", 4000)
                })
+    end
+
+    test "full message is attached as file if it exceeds limit" do
+      assert [
+               payload_json: %{
+                 flags: 32_768,
+                 components: [_, %{type: 13, file: %{url: "attachment://error.txt"}}, _]
+               },
+               error: {"aaaaaa" <> _, [filename: "error.txt"]}
+             ] =
+               Prepare.prepare_occurrence_message(
+                 %{@error | display_full_error: String.duplicate("a", 4000)},
+                 %{foo: "bar"}
+               )
     end
   end
 end

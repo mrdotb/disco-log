@@ -40,6 +40,9 @@ defmodule DiscoLog.ObanTest do
                    content: "**Kind:** `RuntimeError`\n**Reason:** `Exception!`" <> _
                  },
                  %{
+                   content: "```\n** (RuntimeError) Exception!\n" <> _
+                 },
+                 %{
                    type: 10,
                    content:
                      "```elixir\n%{\n  \"oban\" => %{\n    \"args\" => %{foo: \"bar\"},\n    \"attempt\" => 1,\n    \"id\" => 123,\n    \"priority\" => 1,\n    \"queue\" => :default,\n    \"state\" => :failure,\n    \"worker\" => :\"Test.Worker\"\n  }\n}\n```"
