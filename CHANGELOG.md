@@ -5,6 +5,15 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v2.0.0-rc.1](https://github.com/mrdotb/disco-log/compare/v2.0.0-rc.0...v0.0.0-rc.1) (2025-07-23)
+
+### Bug Fixes:
+
+* truncate full error if it exceeds discord limit
+
+
+
+
 ## [v2.0.0-rc.0](https://github.com/mrdotb/disco-log/compare/v1.0.3...v2.0.0-rc.0) (2025-06-13)
 ### Breaking Changes:
 
