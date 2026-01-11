@@ -14,9 +14,7 @@ config :disco_log,
   enable_presence: true
 
 config :logger,
-  backends: [],
-  # Usefull when debugging logger
-  # backends: [:console],
+  default_handler: false,
   compile_time_purge_matching: [
     # Usefull for debugging purposes when doing real discord request
     # [module: DiscoLog.Discord.Client, level_lower_than: :info]

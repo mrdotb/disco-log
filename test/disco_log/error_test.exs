@@ -76,7 +76,7 @@ defmodule DiscoLog.ErrorTest do
 
     test "different exceptions but same app path" do
       fun = fn
-        1 -> String.trim(nil)
+        1 -> JSON.decode!("{")
         2 -> Enum.sum(nil)
       end
 
