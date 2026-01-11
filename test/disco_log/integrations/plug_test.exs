@@ -2,7 +2,6 @@ defmodule DiscoLog.PlugTest do
   use DiscoLog.Test.Case, async: true
 
   import Mox
-  require Logger
   alias DiscoLog.Discord.API
 
   @moduletag config: [supervisor_name: __MODULE__]
