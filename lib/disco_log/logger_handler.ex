@@ -65,18 +65,18 @@ defmodule DiscoLog.LoggerHandler do
     Enum.any?(logged_domains, &(&1 in excluded_domains))
   end
 
-  defp message(%{msg: {:string, chardata}}), do: IO.iodata_to_binary(chardata)
+  defp message(%{msg: {:string, chardata}}), do: IO.chardata_to_string(chardata)
 
   defp message(%{msg: {:report, report}, meta: %{report_cb: report_cb}})
        when is_function(report_cb, 1) do
     {io_format, data} = report_cb.(report)
-    io_format |> :io_lib.format(data) |> IO.iodata_to_binary()
+    io_format |> :io_lib.format(data) |> IO.chardata_to_string()
   end
 
   defp message(%{msg: {:report, report}}), do: inspect(report, limit: :infinity, pretty: true)
 
   defp message(%{msg: {io_format, data}}),
-    do: io_format |> :io_lib.format(data) |> IO.iodata_to_binary()
+    do: io_format |> :io_lib.format(data) |> IO.chardata_to_string()
 
   defp enrich_context(context, %{meta: %{conn: conn}}) when is_struct(conn, Plug.Conn) do
     Map.put_new(context, "plug", DiscoLog.Integrations.Plug.conn_context(conn))
