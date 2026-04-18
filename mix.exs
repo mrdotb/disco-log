@@ -83,7 +83,7 @@ defmodule DiscoLog.MixProject do
       {:nimble_options, "~> 1.1"},
       {:mint_web_socket, "~> 1.0", optional: true},
       # Dev & test dependencies
-      {:git_ops, "~> 2.8.0", only: [:dev]},
+      {:git_ops, "~> 2.10.0", only: [:dev]},
       {:credo, "~> 1.7", only: [:dev, :test]},
       {:ex_doc, "~> 0.33", only: :dev},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
@@ -92,7 +92,7 @@ defmodule DiscoLog.MixProject do
       {:mox, "~> 1.1", only: :test},
       {:logger_handler_kit, "~> 0.3", only: [:test, :dev]},
       {:oban, "~> 2.19", only: [:dev]},
-      {:ecto_sqlite3, "~> 0.21.0", only: [:dev]},
+      {:ecto_sqlite3, "~> 0.22.0", only: [:dev]},
       {:bandit, "~> 1.7", only: [:dev, :test]}
     ]
   end
