@@ -9,7 +9,7 @@ The first step to add DiscoLog to your application is to declare the package as 
 ```elixir
 defp deps do
   [
-    {:disco_log, "~> 1.0.3"}
+    {:disco_log, "~> 2.0.1"}
   ]
 end
 ```
