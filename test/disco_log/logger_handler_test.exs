@@ -643,6 +643,59 @@ defmodule DiscoLog.LoggerHandlerTest do
       assert message =~ "terminating"
     end
 
+    # Regression test: IO.iodata_to_binary was used instead of IO.chardata_to_string,
+    # crashing the handler when crash reports contained Unicode codepoints > 255 (e.g. emojis).
+    test "genserver crash with case clause error containing unicode characters", %{
+      handler_ref: ref
+    } do
+      pid = self()
+
+      expect(API.Mock, :request, fn client, method, url, opts ->
+        send(pid, opts)
+        API.Stub.request(client, method, url, opts)
+      end)
+
+      {:ok, gs_pid} = LoggerHandlerKit.GenServer.start(nil)
+
+      # Emojis (codepoints > 255) in the crash term caused IO.iodata_to_binary to crash
+      complex_term = {:error, %LoggerHandlerKit.FakeStruct{hello: "✨ great condition 🔥"}}
+
+      try do
+        GenServer.call(
+          gs_pid,
+          {:run,
+           fn ->
+             case complex_term do
+               {:ok, _} -> :ok
+             end
+           end}
+        )
+      catch
+        :exit, _ -> :ok
+      end
+
+      LoggerHandlerKit.Assert.assert_logged(ref)
+
+      assert_receive [
+        {:path_params, [channel_id: "occurrences_channel_id"]},
+        {:form_multipart, [payload_json: body]}
+      ]
+
+      assert %{
+               applied_tags: [],
+               message: %{
+                 components: [
+                   %{content: _message},
+                   %{content: message}
+                 ]
+               },
+               name:
+                 <<_::binary-size(7)>> <> "** (CaseClauseError) no case clause matching: " <> _
+             } = body
+
+      assert message =~ "CaseClauseError"
+    end
+
     test "genserver crash exit with a struct", %{handler_ref: ref} do
       pid = self()
 
