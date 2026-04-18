@@ -5,6 +5,15 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 <!-- changelog -->
 
+## [v2.0.1](https://github.com/mrdotb/disco-log/compare/v2.0.0-rc.1...v2.0.1) (2026-04-18)
+
+
+
+
+### Bug Fixes:
+
+* logger: Use Unicode-safe IO.chardata_to_string instead of IO.iodata_to_binary by martosaur
+
 ## [v2.0.0-rc.1](https://github.com/mrdotb/disco-log/compare/v2.0.0-rc.0...v0.0.0-rc.1) (2025-07-23)
 
 ### Bug Fixes:
